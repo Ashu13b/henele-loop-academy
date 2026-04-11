@@ -75,9 +75,14 @@ export function runPhase(st, phase, cfg) {
   else if (phase === "pump") {
     const d = cfg.damping ?? 1;
     for (let i = n - 1; i >= Math.floor(n / 2); i--) {
-      const rem = Math.min(s.as[i], cfg.activeAmount) * d;
-      s.as[i] -= rem;
-      s.is[i] += rem;
+      const ac = gc(s.as[i], s.aw[i]);
+      const ic = gc(s.is[i], s.iw[i]);
+      const target = Math.max(0, ic - cfg.activeAmount);
+      if (ac > target) {
+        const rem = Math.min((ac - target) * s.aw[i], s.as[i]) * d;
+        s.as[i] -= rem;
+        s.is[i] += rem;
+      }
     }
   }
 
@@ -96,14 +101,15 @@ export function runPhase(st, phase, cfg) {
       }
 
       // A→I passive diffusion — thin ascending limb leaks a small amount of NaCl
-      // to I at all levels. Coefficient kept small (0.008) so upper I rises only
-      // slightly above 300 (cortex baseline ~350 mOsm), not to the medullary range.
-      const ac2 = gc(s.as[i], s.aw[i]);
-      const ic2 = gc(s.is[i], s.iw[i]);
-      if (ac2 > ic2) {
-        let sm = (ac2 - ic2) * r * 0.008;
-        sm = Math.min(sm, s.as[i] * 0.15);
-        s.as[i] -= sm; s.is[i] += sm;
+      // to I in medullary boxes only.
+      if (i >= Math.floor(n / 2)) {
+        const ac2 = gc(s.as[i], s.aw[i]);
+        const ic2 = gc(s.is[i], s.iw[i]);
+        if (ac2 > ic2) {
+          let sm = (ac2 - ic2) * r * 0.008;
+          sm = Math.min(sm, s.as[i] * 0.15);
+          s.as[i] -= sm; s.is[i] += sm;
+        }
       }
 
       // Vasa recta restore I toward cortex baseline (300 mOsm, volume 1).

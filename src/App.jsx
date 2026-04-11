@@ -13,15 +13,15 @@ const MAX_C = 100000;
 
 export default function App() {
   const [cfg, setCfg] = useState({
-    scenario: "open",
-    numBoxes: 3,
+    scenario: "henle",
+    numBoxes: 8,
     initialA: 300,
     initialB: 0,
     exchangeRate: 50,
-    activeAmount: 50,
+    activeAmount: 200,
     damping: 0.4,
   });
-  const [s, setS] = useState(() => mkState(3));
+  const [s, setS] = useState(() => mkState(8));
   const [prev, setPrev] = useState(null);
   const [phase, setPhase] = useState("idle");
   const [fullStep, setFullStep] = useState(0);

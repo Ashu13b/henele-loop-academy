@@ -97,13 +97,15 @@ export default function UViz({ s, n, mx, phase, cfg }) {
                   const midX = (ix + bW + rx) / 2;
                   const bY = y + bH / 2;
                   return (
-                    <g>
+                    <g key={`db-${i}`} opacity={delta === 0 ? 0 : 1}>
                       <rect x={midX - 13} y={bY + 3} width={26} height={11} rx={2}
                         fill={bColor} fillOpacity={0.15} stroke={bColor} strokeWidth={0.8} />
-                      <text x={midX} y={bY + 11} textAnchor="middle"
-                        fill={bColor} fontSize="6" fontWeight="700">
-                        {delta > 0 ? `+${delta}` : `${delta}`}
-                      </text>
+                      {delta !== 0 && (
+                        <text x={midX} y={bY + 11} textAnchor="middle"
+                          fill={bColor} fontSize="6" fontWeight="700">
+                          {delta > 0 ? `+${delta}` : `${delta}`}
+                        </text>
+                      )}
                     </g>
                   );
                 })()}

@@ -38,6 +38,7 @@ export const SC = {
     label: "Real Henle", short: "Henle",
     desc: "U-turn + pump→I + osmosis D→I. Real multiplication with conservation. D concentrates by LOSING WATER, not gaining solute. I is the battery.",
     hasActive: true, isLoop: true, hasI: true,
+    defaultNumBoxes: 8, defaultActiveAmount: 200,
     watch: "Watch the W value inside D segments fall below 1.0 — water is leaving via osmosis into I. S (solute mass) in D stays nearly constant. Concentration rises only because water left. Check conservation: total solute stays stable. I is the gradient battery that makes this work.",
     key: "Real multiplication with conservation intact. D concentrates by LOSING WATER, not gaining solute — the pump charges I, osmosis drains D, the U-turn feeds dilute fluid back to the pump. Factor > 1×, nothing fabricated. This is how your kidneys work right now.",
   },

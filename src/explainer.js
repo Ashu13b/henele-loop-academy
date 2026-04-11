@@ -31,10 +31,16 @@ export function explain(phase, s, prev, cfg, step) {
 
   if (phase === "pump") {
     let moved = 0;
+    const d = cfg.damping ?? 1;
     for (let i = n - 1; i >= Math.floor(n / 2); i--) {
-      moved += Math.min(prev ? prev.as[i] : 0, cfg.activeAmount);
+      const ac = gc(prev ? prev.as[i] : 0, prev ? prev.aw[i] : 1);
+      const ic = gc(prev ? prev.is[i] : 0, prev ? prev.iw[i] : 1);
+      const target = Math.max(0, ic - cfg.activeAmount);
+      if (ac > target) {
+        moved += Math.min((ac - target) * (prev ? prev.aw[i] : 1), prev ? prev.as[i] : 0) * d;
+      }
     }
-    return `Active pump (Na⁺/K⁺-ATPase): ~${Math.round(moved)} solute moved A→I. Nothing is created or destroyed — the single effect. D concentrates because interstitium I gets salty, pulling water out next step.`;
+    return `Active pump (NKCC2 in TAL): ~${Math.round(moved)} solute moved A→I. Nothing is created or destroyed — the single effect: pump keeps A ≈ ${cfg.activeAmount} mOsm lower than I at each level. Result: A exits the medulla hypoosmotic (dilute) to the cortex.`;
   }
 
   if (phase === "osmosis") {

@@ -1,4 +1,4 @@
-# SESSION.md — Auto-generated 2026-04-11 18:21
+# SESSION.md — Auto-generated 2026-04-11 19:17
 # Do not edit manually. Regenerated every session.
 
 mode: planning
@@ -40,12 +40,11 @@ build: npm run build
 signatures/App.jsx.sig signatures/Chart.jsx.sig signatures/Controls.jsx.sig signatures/LinearViz.jsx.sig signatures/UViz.jsx.sig signatures/constants.js.sig signatures/engine.js.sig signatures/explainer.js.sig signatures/helpers.js.sig 
 
 ## Task Progress
-done: 12 / 12
+done: 16 / 16
 next: No pending tasks
 
 ## Uncommitted Changes
  M PLAN.md
- M SESSION.md
  D dist/assets/index-eu9m_maF.js
  M dist/index.html
  D node_modules/.vite/deps_temp_f76d5fa2/chunk-2YIMICFJ.js
@@ -66,11 +65,11 @@ next: No pending tasks
  D node_modules/.vite/deps_temp_f76d5fa2/recharts.js
  D node_modules/.vite/deps_temp_f76d5fa2/recharts.js.map
  M node_modules/.vite/vitest/results.json
-?? dist/assets/index-Bqe_xVyj.js
+?? dist/assets/index-vc6vr1ah.js
 
 ## Recent Commits
-3501db8 fix: Bugs 7+8+10 — isotonic start, bidirectional osmosis, full equilibration
-72d4053 fix: faster iw vasa-recta drain stops I dilution by osmotic water inflow
-db45d9b fix: interstitium IS restores toward 300 instead of decaying to 0
-67ed1ec fix: Bug 6 — descending limb dw no longer increases going down
-4ad70e6 fix: n from s.ds.length — prevents crash on numBoxes change
+ff7c1ca feat: Task D — damping factor for pump+osmosis; smooth gradient build-up; segments max 20
+2fe696c fix: D fill full-width in UViz+LinearViz; concentration always shown; scenario switch applies defaultNumBoxes/activeAmount
+948f7d3 fix: D box always full-width outline + fill level; A/I concentration always shown
+a95e429 feat: Task C — single-effect delta badges on A↔I connector (medullary boxes)
+dc6b54d feat: Task B — ascending limb exit label in UViz (hypoosmotic annotation)
