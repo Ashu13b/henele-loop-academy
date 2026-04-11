@@ -110,9 +110,10 @@ export function runPhase(st, phase, cfg) {
         s.as[i] -= sm; s.is[i] += sm;
       }
       // Soft-restore I toward cortex baseline (300 mOsm, volume 1).
-      // is * 0.99 + 3 has equilibrium at is = 300; pump activity pushes it higher.
-      // iw * 0.99 + 0.01 has equilibrium at iw = 1.
-      s.is[i] = s.is[i] * 0.99 + 3; s.iw[i] = s.iw[i] * 0.99 + 0.01;
+      // is * 0.99 + 3  → equilibrium at is = 300; pump pushes it higher in medulla.
+      // iw * 0.95 + 0.05 → fast vasa-recta drain keeps iw ≈ 1 so water
+      //   entering from D doesn't dilute I; same equilibrium (1) as before.
+      s.is[i] = s.is[i] * 0.99 + 3; s.iw[i] = s.iw[i] * 0.95 + 0.05;
     }
   }
 
