@@ -33,7 +33,10 @@ export default function App() {
   const timerRef = useRef(null);
 
   const sc = SC[cfg.scenario];
-  const n = cfg.numBoxes;
+  // Always derive n from the live state arrays, not cfg.numBoxes.
+  // cfg.numBoxes updates synchronously but setS(mkState(...)) fires
+  // one render later — using cfg here causes out-of-bounds SVG crashes.
+  const n = s.ds.length;
 
   const reset = useCallback(() => {
     setS(mkState(cfg.numBoxes));
