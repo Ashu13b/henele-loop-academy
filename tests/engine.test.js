@@ -30,10 +30,10 @@ describe("mkState", () => {
     expect(s.iw.every(v => v === 1)).toBe(true);
   });
 
-  it("solute starts at 0 except interstitium", () => {
+  it("Bug 7 fix: ds and as start at 300 (isotonic baseline, not 0)", () => {
     const s = mkState(3);
-    expect(s.ds.every(v => v === 0)).toBe(true);
-    expect(s.as.every(v => v === 0)).toBe(true);
+    expect(s.ds.every(v => v === 300)).toBe(true);
+    expect(s.as.every(v => v === 300)).toBe(true);
   });
 });
 
@@ -42,7 +42,7 @@ describe("cloneS", () => {
     const s = mkState(3);
     const c = cloneS(s);
     c.ds[0] = 999;
-    expect(s.ds[0]).toBe(0);
+    expect(s.ds[0]).toBe(300); // Bug 7: ds starts at 300
   });
 
   it("preserves fabricated/destroyed counters", () => {
@@ -87,10 +87,10 @@ describe("runPhase - feed", () => {
     expect(r.ds[0]).toBe(BASE_CFG.initialA);
   });
 
-  it("loop scenario: does not set A[n-1]", () => {
+  it("loop scenario: does not overwrite A[n-1] — stays at isotonic baseline", () => {
     const s = mkState(5);
     const r = runPhase(s, "feed", BASE_CFG); // henle is isLoop
-    expect(r.as[4]).toBe(0);
+    expect(r.as[4]).toBe(300); // Bug 7: as starts at 300; feed doesn't touch it in loop
   });
 
   it("open scenario: sets A[n-1] to initialB", () => {
@@ -101,25 +101,27 @@ describe("runPhase - feed", () => {
   });
 });
 
-describe("runPhase - osmosis (Bug 3 fix)", () => {
-  it("water moves D→I when I is more concentrated", () => {
+describe("runPhase - osmosis (Bug 10b: full equilibration)", () => {
+  it("D loses water until DC = IC when I is more concentrated", () => {
     const s = mkState(3);
-    s.ds[0] = 0; s.dw[0] = 1;
-    s.is[0] = 600; s.iw[0] = 1; // I much more concentrated
+    s.ds[0] = 300; s.dw[0] = 1;   // DC = 300
+    s.is[0] = 600; s.iw[0] = 1;   // IC = 600
     const cfg = { ...BASE_CFG, numBoxes: 3 };
     const r = runPhase(s, "osmosis", cfg);
-    expect(r.dw[0]).toBeLessThan(1);   // water left D
-    expect(r.iw[0]).toBeGreaterThan(1); // water entered I
+    // Full equilibration: dw = ds/ic = 300/600 = 0.5
+    expect(r.dw[0]).toBeCloseTo(0.5, 2);
+    // Water drains to vasa recta — IW stays near 1, not inflated
+    expect(r.iw[0]).toBeLessThanOrEqual(1.05);
   });
 
-  it("Bug 6 fix: water does NOT move I→D in hasI (loop) scenarios — descending limb only loses water", () => {
+  it("Bug 8 fix: water enters D when DC > IC (bidirectional equilibration)", () => {
     const s = mkState(3);
-    s.ds[0] = 1200; s.dw[0] = 1;  // D very concentrated
-    s.is[0] = 100; s.iw[0] = 1;   // I dilute
-    const cfg = { ...BASE_CFG, numBoxes: 3 }; // scenario: "henele" has hasI: true
+    s.ds[0] = 600; s.dw[0] = 1;   // DC = 600
+    s.is[0] = 300; s.iw[0] = 1;   // IC = 300
+    const cfg = { ...BASE_CFG, numBoxes: 3 };
     const r = runPhase(s, "osmosis", cfg);
-    // In a hasI scenario water must never enter D from I — dw must not increase
-    expect(r.dw[0]).toBeLessThanOrEqual(1);
+    // Full equilibration: dw = ds/ic = 600/300 = 2
+    expect(r.dw[0]).toBeCloseTo(2, 2);
   });
 });
 

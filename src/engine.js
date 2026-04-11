@@ -3,11 +3,13 @@ import { gc } from "./helpers.js";
 
 /* ═══ STATE ═══ */
 
-// Bug 2 fix: interstitium starts at 300 baseline, not 0.
+// Bug 7 fix: all compartments start isotonic (300 mOsm). Previously ds/as
+// were 0, so osmosis fired immediately before the pump had run — water was
+// pulled from D by IC=300 >> DC=0 on the very first step.
 export function mkState(n) {
   return {
-    ds: Array(n).fill(0), dw: Array(n).fill(1),
-    as: Array(n).fill(0), aw: Array(n).fill(1),
+    ds: Array(n).fill(300), dw: Array(n).fill(1),
+    as: Array(n).fill(300), aw: Array(n).fill(1),
     is: Array(n).fill(300), iw: Array(n).fill(1),
     fabricated: 0, destroyed: 0,
   };
@@ -83,37 +85,30 @@ export function runPhase(st, phase, cfg) {
       const dc = gc(s.ds[i], s.dw[i]);
       const ic = gc(s.is[i], s.iw[i]);
 
-      // Bug 3 fix: bidirectional osmosis — water follows osmotic gradient both ways.
-      if (ic > dc && s.dw[i] > 0.05) {
-        // I is more concentrated → water leaves D → I
-        const grad = (ic - dc) / Math.max(ic, 1);
-        let wm = grad * r * 0.25 * s.dw[i];
-        wm = Math.min(wm, s.dw[i] * 0.4);
-        s.dw[i] -= wm; s.iw[i] += wm;
-      } else if (!sc.hasI && dc > ic && s.iw[i] > 0.05) {
-        // Bug 6 fix: only allow I→D water transfer in non-loop scenarios.
-        // In loop scenarios the descending limb must only lose water; the
-        // pump never builds I above D in the upper cortex boxes, so this
-        // branch would incorrectly inflate dw going down the loop.
-        const grad = (dc - ic) / Math.max(dc, 1);
-        let wm = grad * r * 0.25 * s.iw[i];
-        wm = Math.min(wm, s.iw[i] * 0.4);
-        s.iw[i] -= wm; s.dw[i] += wm;
+      // Bug 8+10b fix: full osmotic equilibration — D water adjusts until DC = IC.
+      // Water drains immediately to vasa recta (not stored in IW), so IW stays ≈ 1.
+      // Works in both directions (Bug 8: remove !sc.hasI guard; after Bug 7 fix the
+      // isotonic start means DC never incorrectly exceeds IC at startup).
+      if (ic > 0.1 && Math.abs(dc - ic) > 0.1) {
+        s.dw[i] = Math.max(s.ds[i] / ic, 0.01);
       }
 
-      // A→I solute diffusion
+      // A→I passive diffusion — thin ascending limb leaks a small amount of NaCl
+      // to I at all levels. Coefficient kept small (0.008) so upper I rises only
+      // slightly above 300 (cortex baseline ~350 mOsm), not to the medullary range.
       const ac2 = gc(s.as[i], s.aw[i]);
       const ic2 = gc(s.is[i], s.iw[i]);
       if (ac2 > ic2) {
-        let sm = (ac2 - ic2) * r * 0.05;
+        let sm = (ac2 - ic2) * r * 0.008;
         sm = Math.min(sm, s.as[i] * 0.15);
         s.as[i] -= sm; s.is[i] += sm;
       }
-      // Soft-restore I toward cortex baseline (300 mOsm, volume 1).
-      // is * 0.99 + 3  → equilibrium at is = 300; pump pushes it higher in medulla.
-      // iw * 0.95 + 0.05 → fast vasa-recta drain keeps iw ≈ 1 so water
-      //   entering from D doesn't dilute I; same equilibrium (1) as before.
-      s.is[i] = s.is[i] * 0.99 + 3; s.iw[i] = s.iw[i] * 0.95 + 0.05;
+
+      // Vasa recta restore I toward cortex baseline (300 mOsm, volume 1).
+      // is * 0.98 + 6 → equilibrium 300 without pump; with pump adding 20/cycle
+      //   equilibrium ≈ 1300 mOsm (physiological medullary tip).
+      // iw * 0.95 + 0.05 → fast drain keeps iw ≈ 1.
+      s.is[i] = s.is[i] * 0.98 + 6; s.iw[i] = s.iw[i] * 0.95 + 0.05;
     }
   }
 
