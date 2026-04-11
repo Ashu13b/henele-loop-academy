@@ -90,8 +90,11 @@ export function runPhase(st, phase, cfg) {
         let wm = grad * r * 0.25 * s.dw[i];
         wm = Math.min(wm, s.dw[i] * 0.4);
         s.dw[i] -= wm; s.iw[i] += wm;
-      } else if (dc > ic && s.iw[i] > 0.05) {
-        // D is more concentrated → water leaves I → D
+      } else if (!sc.hasI && dc > ic && s.iw[i] > 0.05) {
+        // Bug 6 fix: only allow I→D water transfer in non-loop scenarios.
+        // In loop scenarios the descending limb must only lose water; the
+        // pump never builds I above D in the upper cortex boxes, so this
+        // branch would incorrectly inflate dw going down the loop.
         const grad = (dc - ic) / Math.max(dc, 1);
         let wm = grad * r * 0.25 * s.iw[i];
         wm = Math.min(wm, s.iw[i] * 0.4);

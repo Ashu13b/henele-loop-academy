@@ -112,14 +112,14 @@ describe("runPhase - osmosis (Bug 3 fix)", () => {
     expect(r.iw[0]).toBeGreaterThan(1); // water entered I
   });
 
-  it("Bug 3 fix: water moves I→D when D is more concentrated", () => {
+  it("Bug 6 fix: water does NOT move I→D in hasI (loop) scenarios — descending limb only loses water", () => {
     const s = mkState(3);
     s.ds[0] = 1200; s.dw[0] = 1;  // D very concentrated
     s.is[0] = 100; s.iw[0] = 1;   // I dilute
-    const cfg = { ...BASE_CFG, numBoxes: 3 };
+    const cfg = { ...BASE_CFG, numBoxes: 3 }; // scenario: "henele" has hasI: true
     const r = runPhase(s, "osmosis", cfg);
-    expect(r.iw[0]).toBeLessThan(1);   // water left I
-    expect(r.dw[0]).toBeGreaterThan(1); // water entered D
+    // In a hasI scenario water must never enter D from I — dw must not increase
+    expect(r.dw[0]).toBeLessThanOrEqual(1);
   });
 });
 
