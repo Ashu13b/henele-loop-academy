@@ -41,6 +41,22 @@ export const SC = {
     watch: "Watch the W value inside D segments fall below 1.0 — water is leaving via osmosis into I. S (solute mass) in D stays nearly constant. Concentration rises only because water left. Check conservation: total solute stays stable. I is the gradient battery that makes this work.",
     key: "Real multiplication with conservation intact. D concentrates by LOSING WATER, not gaining solute — the pump charges I, osmosis drains D, the U-turn feeds dilute fluid back to the pump. Factor > 1×, nothing fabricated. This is how your kidneys work right now.",
   },
+  "short-loop": {
+    label: "Short Loop (Cortical)", short: "S.Loop",
+    desc: "Cortical nephron: only 4 segments. Same single-effect pump (~200 mOsm per level) as Real Henle — but fewer levels means weak multiplication. Tip barely reaches 400–600 mOsm.",
+    hasActive: true, isLoop: true, hasI: true,
+    defaultNumBoxes: 4, defaultActiveAmount: 200,
+    watch: "Watch the tip concentration — it plateaus well below 1200 mOsm. Each level adds the same ~200 mOsm single effect, but with only 4 segments there are not enough rungs on the ladder. Compare with Real Henle to see how loop length sets the ceiling.",
+    key: "Multiplication = single-effect × number of levels. A short cortical loop can only reach ~400–600 mOsm. Most human nephrons are cortical; only the juxtamedullary ones reach 1200. This is why humans can concentrate urine to 1200 but not higher.",
+  },
+  "kangaroo-rat": {
+    label: "Kangaroo Rat", short: "K.Rat",
+    desc: "Desert survival: 16-segment loop with a stronger pump (~300 mOsm single effect). Models the kangaroo rat kidney that can concentrate urine above 9000 mOsm — nearly 8× human maximum.",
+    hasActive: true, isLoop: true, hasI: true,
+    defaultNumBoxes: 16, defaultActiveAmount: 300,
+    watch: "Watch the tip concentration keep climbing — far past 1200 mOsm. Every extra segment multiplies the gradient one more time. The interstitium at the tip becomes extraordinarily concentrated. Notice how long it takes to reach steady state with 16 segments.",
+    key: "The kangaroo rat never needs to drink water — it survives entirely on metabolic water from seeds. Its secret is a very long Loop of Henle. Loop length is the primary evolutionary lever for urine concentration: more segments, higher ceiling. Physics is identical to Real Henle — only the geometry differs.",
+  },
 };
 
 export const PI = {
