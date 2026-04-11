@@ -43,7 +43,7 @@ countercurrent_simulator.jsx — source of truth during split, do NOT modify
 - Bug 5: Explainer text too generic → fix in explainer.js with injection-vs-real language
 
 ## Tasks
-[ ] package.json + vite.config.js + index.html — Vite+React scaffold — depends on: none
+[x] package.json + vite.config.js + index.html — Vite+React scaffold — depends on: none
 [ ] src/constants.js — SC, PI, SPEEDS — depends on: none
 [ ] src/helpers.js — cCol, tCol, gc — depends on: none
 [ ] src/engine.js — mkState(fix Bug2), cloneS, getPhases, runPhase(fix Bug3), runCycle, computeSteady — depends on: constants.js.sig, helpers.js.sig
