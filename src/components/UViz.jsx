@@ -3,20 +3,36 @@ import { gc, cCol, tCol } from "../helpers.js";
 
 // Bug 4 fix: D box always scales with dw (not just when hasI), and S/W sub-labels shown.
 export default function UViz({ s, n, mx, phase, cfg }) {
-  const hasI = SC[cfg.scenario].hasI;
+  const sc = SC[cfg.scenario];
+  const hasI = sc.hasI;
+  const showExit = sc.isLoop;
   const bW = 44, bH = 38, gap = 8;
   const lx = 26;
   const ix = hasI ? lx + bW + 24 : 0;
   const rx = hasI ? ix + bW + 24 : lx + bW + 38;
-  const sy = 22;
+  const sy = showExit ? 36 : 22;
   const svgH = sy + n * (bH + gap) + 36;
   const svgW = rx + bW + 36;
+  const exitConc = showExit ? gc(s.as[0], s.aw[0]) : 0;
 
   return (
     <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ maxWidth: hasI ? 330 : 260, margin: "0 auto", display: "block" }}>
       <text x={lx + bW / 2} y={12} textAnchor="middle" fill="#c0392b" fontSize="9" fontWeight="700">D ↓</text>
       {hasI && <text x={ix + bW / 2} y={12} textAnchor="middle" fill="#5dade2" fontSize="8" fontWeight="600">I (tissue)</text>}
       <text x={rx + bW / 2} y={12} textAnchor="middle" fill="#2471a3" fontSize="9" fontWeight="700">A ↑</text>
+
+      {showExit && (
+        <g>
+          <text x={rx + bW / 2} y={23} textAnchor="middle" fill="#1a6fa3" fontSize="7" fontWeight="700">
+            {`↑ Exit ≈ ${Math.round(exitConc)} mOsm`}
+          </text>
+          {exitConc < 280 && (
+            <text x={rx + bW / 2} y={31} textAnchor="middle" fill="#5dade2" fontSize="6" fontStyle="italic">
+              hypoosmotic
+            </text>
+          )}
+        </g>
+      )}
 
       {Array.from({ length: n }).map((_, i) => {
         const y = sy + i * (bH + gap);
