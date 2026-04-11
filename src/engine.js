@@ -109,8 +109,10 @@ export function runPhase(st, phase, cfg) {
         sm = Math.min(sm, s.as[i] * 0.15);
         s.as[i] -= sm; s.is[i] += sm;
       }
-      s.is[i] *= 0.99; s.iw[i] *= 0.99;
-      s.iw[i] += 0.01;
+      // Soft-restore I toward cortex baseline (300 mOsm, volume 1).
+      // is * 0.99 + 3 has equilibrium at is = 300; pump activity pushes it higher.
+      // iw * 0.99 + 0.01 has equilibrium at iw = 1.
+      s.is[i] = s.is[i] * 0.99 + 3; s.iw[i] = s.iw[i] * 0.99 + 0.01;
     }
   }
 
