@@ -52,8 +52,8 @@ describe("UViz", () => {
     const cfg = { ...CFG, numBoxes: 4 };
     const { container } = render(<UViz s={s} n={4} mx={600} phase="idle" cfg={cfg} />);
     const rects = container.querySelectorAll("rect");
-    // 4 rows × 3 columns (D, I, A for henle) = 12 box rects
-    // + 2 medullary delta badges (i >= floor(4/2) = 2, so i=2 and i=3) = 14 total
-    expect(rects.length).toBe(14);
+    // 4 rows: D has 2 rects each (outline + fill) = 8, I = 4, A = 4 → 16 box rects
+    // + 2 medullary delta badges (i >= floor(4/2) = 2) = 18 total
+    expect(rects.length).toBe(18);
   });
 });
