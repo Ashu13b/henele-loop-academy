@@ -47,7 +47,7 @@ countercurrent_simulator.jsx — source of truth during split, do NOT modify
 [x] src/constants.js — SC, PI, SPEEDS — depends on: none
 [x] src/helpers.js — cCol, tCol, gc — depends on: none
 [x] src/engine.js — mkState(fix Bug2), cloneS, getPhases, runPhase(fix Bug3), runCycle, computeSteady — depends on: constants.js.sig, helpers.js.sig
-[ ] src/explainer.js — explain() with better text (fix Bug5) — depends on: constants.js.sig, helpers.js.sig, engine.js.sig
+[x] src/explainer.js — explain() with better text (fix Bug5) — depends on: constants.js.sig, helpers.js.sig, engine.js.sig
 [ ] src/components/UViz.jsx — U-shape SVG viz, D box scales with dw (fix Bug4) — depends on: constants.js.sig, helpers.js.sig
 [ ] src/components/LinearViz.jsx — linear open viz, same Bug4 fix — depends on: constants.js.sig, helpers.js.sig
 [ ] src/components/Controls.jsx — scenario tabs, speed, step/run/reset — depends on: constants.js.sig
