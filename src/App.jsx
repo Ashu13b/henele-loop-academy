@@ -19,6 +19,7 @@ export default function App() {
     initialB: 0,
     exchangeRate: 50,
     activeAmount: 50,
+    damping: 0.4,
   });
   const [s, setS] = useState(() => mkState(3));
   const [prev, setPrev] = useState(null);

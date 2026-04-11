@@ -50,11 +50,19 @@ export default function Controls({
 
       {/* Config inputs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 5, background: "#14142a", padding: 6, borderRadius: 5, border: "1px solid #222240", marginBottom: 6 }}>
-        <NI label="Segments" value={cfg.numBoxes} min={2} max={10} onChange={v => onUpdateCfg("numBoxes", v)} />
+        <NI label="Segments" value={cfg.numBoxes} min={2} max={20} onChange={v => onUpdateCfg("numBoxes", v)} />
         <NI label="Input" value={cfg.initialA} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialA", v)} />
         {!sc.isLoop && <NI label="B Input" value={cfg.initialB} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialB", v)} />}
         <NI label={sc.hasI ? "Perm %" : "Exch %"} value={cfg.exchangeRate} min={0} max={100} step={5} onChange={v => onUpdateCfg("exchangeRate", v)} />
         {sc.hasActive && <NI label={sc.hasI ? "Pump" : "Inject"} value={cfg.activeAmount} min={0} max={500} step={10} onChange={v => onUpdateCfg("activeAmount", v)} />}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <label style={{ fontSize: 9, color: "#666", fontWeight: 600 }}>
+            Damp <span style={{ color: "#e67e22", fontFamily: "monospace" }}>{(cfg.damping ?? 1).toFixed(1)}</span>
+          </label>
+          <input type="range" min="0.1" max="1" step="0.1" value={cfg.damping ?? 1}
+            onChange={e => onUpdateCfg("damping", parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#e67e22", cursor: "pointer" }} />
+        </div>
       </div>
 
       {/* Phase indicator */}

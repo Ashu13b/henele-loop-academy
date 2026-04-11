@@ -73,24 +73,26 @@ export function runPhase(st, phase, cfg) {
   }
 
   else if (phase === "pump") {
+    const d = cfg.damping ?? 1;
     for (let i = n - 1; i >= Math.floor(n / 2); i--) {
-      const rem = Math.min(s.as[i], cfg.activeAmount);
+      const rem = Math.min(s.as[i], cfg.activeAmount) * d;
       s.as[i] -= rem;
       s.is[i] += rem;
     }
   }
 
   else if (phase === "osmosis") {
+    const d = cfg.damping ?? 1;
     for (let i = 0; i < n; i++) {
       const dc = gc(s.ds[i], s.dw[i]);
       const ic = gc(s.is[i], s.iw[i]);
 
-      // Bug 8+10b fix: full osmotic equilibration — D water adjusts until DC = IC.
-      // Water drains immediately to vasa recta (not stored in IW), so IW stays ≈ 1.
-      // Works in both directions (Bug 8: remove !sc.hasI guard; after Bug 7 fix the
-      // isotonic start means DC never incorrectly exceeds IC at startup).
+      // Damped osmotic equilibration: D water moves d-fraction of the way toward
+      // full equilibrium (dw = ds/ic) each step. d=1 → original full-step behaviour;
+      // d<1 → smoother gradient build-up without concentration spikes.
       if (ic > 0.1 && Math.abs(dc - ic) > 0.1) {
-        s.dw[i] = Math.max(s.ds[i] / ic, 0.01);
+        const targetDw = Math.max(s.ds[i] / ic, 0.01);
+        s.dw[i] = s.dw[i] + (targetDw - s.dw[i]) * d;
       }
 
       // A→I passive diffusion — thin ascending limb leaks a small amount of NaCl
@@ -148,9 +150,12 @@ export function computeSteady(cfg) {
   let s = mkState(n);
   let conv = -1;
   const snaps = [];
+  // Always use full damping (1) for convergence search — damping only affects
+  // how smoothly the sim animates, not where it converges.
+  const steadyCfg = { ...cfg, damping: 1 };
   for (let c = 0; c < MAX_C; c++) {
     const p = cloneS(s);
-    s = runCycle(s, cfg);
+    s = runCycle(s, steadyCfg);
     if (c < 20 || (c % 10 === 0 && c < 200) || (c % 100 === 0 && c < 2000) || c % 1000 === 0) {
       snaps.push({
         step: c + 1,
