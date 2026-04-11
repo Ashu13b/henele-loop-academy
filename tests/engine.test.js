@@ -1,0 +1,157 @@
+import { describe, it, expect } from "vitest";
+import { mkState, cloneS, getPhases, runPhase, runCycle, computeSteady } from "../src/engine.js";
+
+const BASE_CFG = {
+  scenario: "henle",
+  numBoxes: 5,
+  initialA: 300,
+  initialB: 300,
+  exchangeRate: 30,
+  activeAmount: 20,
+};
+
+describe("mkState", () => {
+  it("creates arrays of length n", () => {
+    const s = mkState(5);
+    expect(s.ds).toHaveLength(5);
+    expect(s.as).toHaveLength(5);
+    expect(s.is).toHaveLength(5);
+  });
+
+  it("Bug 2 fix: interstitium starts at 300 baseline, not 0", () => {
+    const s = mkState(5);
+    expect(s.is.every(v => v === 300)).toBe(true);
+  });
+
+  it("water compartments start at 1", () => {
+    const s = mkState(4);
+    expect(s.dw.every(v => v === 1)).toBe(true);
+    expect(s.aw.every(v => v === 1)).toBe(true);
+    expect(s.iw.every(v => v === 1)).toBe(true);
+  });
+
+  it("solute starts at 0 except interstitium", () => {
+    const s = mkState(3);
+    expect(s.ds.every(v => v === 0)).toBe(true);
+    expect(s.as.every(v => v === 0)).toBe(true);
+  });
+});
+
+describe("cloneS", () => {
+  it("returns a deep copy — mutations don't affect original", () => {
+    const s = mkState(3);
+    const c = cloneS(s);
+    c.ds[0] = 999;
+    expect(s.ds[0]).toBe(0);
+  });
+
+  it("preserves fabricated/destroyed counters", () => {
+    const s = mkState(3);
+    s.fabricated = 42; s.destroyed = 7;
+    const c = cloneS(s);
+    expect(c.fabricated).toBe(42);
+    expect(c.destroyed).toBe(7);
+  });
+});
+
+describe("getPhases", () => {
+  it("henle has pump, osmosis, flow", () => {
+    const p = getPhases("henle");
+    expect(p).toContain("pump");
+    expect(p).toContain("osmosis");
+    expect(p).toContain("flow");
+    expect(p).not.toContain("inject");
+    expect(p).not.toContain("exchange");
+  });
+
+  it("loop-inj has inject and flow, no pump/osmosis", () => {
+    const p = getPhases("loop-inj");
+    expect(p).toContain("inject");
+    expect(p).toContain("flow");
+    expect(p).not.toContain("pump");
+    expect(p).not.toContain("osmosis");
+  });
+
+  it("open has exchange but no inject/pump", () => {
+    const p = getPhases("open");
+    expect(p).toContain("exchange");
+    expect(p).not.toContain("inject");
+    expect(p).not.toContain("pump");
+  });
+});
+
+describe("runPhase - feed", () => {
+  it("sets D[0] to initialA", () => {
+    const s = mkState(5);
+    const r = runPhase(s, "feed", BASE_CFG);
+    expect(r.ds[0]).toBe(BASE_CFG.initialA);
+  });
+
+  it("loop scenario: does not set A[n-1]", () => {
+    const s = mkState(5);
+    const r = runPhase(s, "feed", BASE_CFG); // henle is isLoop
+    expect(r.as[4]).toBe(0);
+  });
+
+  it("open scenario: sets A[n-1] to initialB", () => {
+    const cfg = { ...BASE_CFG, scenario: "open" };
+    const s = mkState(5);
+    const r = runPhase(s, "feed", cfg);
+    expect(r.as[4]).toBe(cfg.initialB);
+  });
+});
+
+describe("runPhase - osmosis (Bug 3 fix)", () => {
+  it("water moves D→I when I is more concentrated", () => {
+    const s = mkState(3);
+    s.ds[0] = 0; s.dw[0] = 1;
+    s.is[0] = 600; s.iw[0] = 1; // I much more concentrated
+    const cfg = { ...BASE_CFG, numBoxes: 3 };
+    const r = runPhase(s, "osmosis", cfg);
+    expect(r.dw[0]).toBeLessThan(1);   // water left D
+    expect(r.iw[0]).toBeGreaterThan(1); // water entered I
+  });
+
+  it("Bug 3 fix: water moves I→D when D is more concentrated", () => {
+    const s = mkState(3);
+    s.ds[0] = 1200; s.dw[0] = 1;  // D very concentrated
+    s.is[0] = 100; s.iw[0] = 1;   // I dilute
+    const cfg = { ...BASE_CFG, numBoxes: 3 };
+    const r = runPhase(s, "osmosis", cfg);
+    expect(r.iw[0]).toBeLessThan(1);   // water left I
+    expect(r.dw[0]).toBeGreaterThan(1); // water entered D
+  });
+});
+
+describe("runCycle", () => {
+  it("returns a state object with correct shape", () => {
+    const s = mkState(5);
+    const r = runCycle(s, BASE_CFG);
+    expect(r.ds).toHaveLength(5);
+    expect(r.as).toHaveLength(5);
+    expect(r.is).toHaveLength(5);
+  });
+
+  it("henle scenario accumulates concentration over cycles", () => {
+    const cfg = { ...BASE_CFG, numBoxes: 5, initialA: 300, activeAmount: 30 };
+    let s = mkState(5);
+    for (let i = 0; i < 100; i++) s = runCycle(s, cfg);
+    // After many cycles, tip D should exceed input in henle
+    const tipD = s.ds[4] / s.dw[4];
+    expect(tipD).toBeGreaterThan(300);
+  });
+});
+
+describe("computeSteady", () => {
+  it("returns state, convergedAt, snapshots", () => {
+    const cfg = { ...BASE_CFG, numBoxes: 3, exchangeRate: 50 };
+    const result = computeSteady(cfg);
+    expect(result.state).toBeDefined();
+    expect(result.snapshots.length).toBeGreaterThan(0);
+  });
+
+  it("open-i scenario runs without crashing (Bug 1 regression)", () => {
+    const cfg = { ...BASE_CFG, scenario: "open-i", numBoxes: 3 };
+    expect(() => computeSteady(cfg)).not.toThrow();
+  });
+});
