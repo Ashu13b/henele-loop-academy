@@ -46,17 +46,11 @@ export default function UViz({ s, n, mx, phase, cfg }) {
         const isFl = phase === "flow";
         const isFd = phase === "feed"     && i === 0;
 
-        // Bug 4 fix: always scale D box width by water volume.
-        const dScale = Math.max(0.45, Math.min(1, s.dw[i]));
-        const dW = bW * dScale;
-        const dX = lx + (bW - dW) / 2;
-
         return (
           <g key={i}>
-            {/* D column: full outline always; water-scaled fill shows how much water remains */}
-            <rect x={lx} y={y} width={bW} height={bH} rx={3} fill="#0a0a1a" fillOpacity={0.05}
+            {/* D column: full-width box, concentration colour fills entire cell */}
+            <rect x={lx} y={y} width={bW} height={bH} rx={3} fill={cCol(dc, mx)}
               stroke={isFd ? "#27ae60" : isFl ? "#3498db" : "#c0392b"} strokeWidth={isFd || isFl ? 2 : 1.2} />
-            <rect x={dX} y={y} width={dW} height={bH} rx={3} fill={cCol(dc, mx)} stroke="none" />
             <text x={lx + bW / 2} y={y + bH / 2} textAnchor="middle" fill={tCol(dc, mx)} fontSize="10" fontWeight="700">{Math.round(dc)}</text>
             {/* Bug 4: S/W labels */}
             <text x={lx + bW / 2} y={y + bH / 2 + 9} textAnchor="middle" fill={tCol(dc, mx)} fontSize="6" opacity={0.75}>

@@ -31,17 +31,12 @@ export default function LinearViz({ s, n, mx, phase, cfg }) {
         const isFdD = phase === "feed"     && i === 0;
         const isFdA = phase === "feed"     && i === n - 1;
 
-        // Bug 4 fix: always scale D box width by water volume.
-        const dScale = Math.max(0.45, Math.min(1, s.dw[i]));
-        const dW = bW * dScale;
-        const dX = x + (bW - dW) / 2;
-
         return (
           <g key={i}>
-            {/* D row */}
-            <rect x={dX} y={topY} width={dW} height={bH} rx={3} fill={cCol(dc, mx)}
+            {/* D row: full-width box */}
+            <rect x={x} y={topY} width={bW} height={bH} rx={3} fill={cCol(dc, mx)}
               stroke={isFdD ? "#27ae60" : isFl ? "#3498db" : "#c0392b"} strokeWidth={isFdD || isFl ? 2 : 1.2} />
-            <text x={x + bW / 2} y={topY + bH / 2} textAnchor="middle" fill={tCol(dc, mx)} fontSize="10" fontWeight="700">{dc > 0.5 ? Math.round(dc) : ""}</text>
+            <text x={x + bW / 2} y={topY + bH / 2} textAnchor="middle" fill={tCol(dc, mx)} fontSize="10" fontWeight="700">{Math.round(dc)}</text>
             {/* Bug 4: S/W labels */}
             <text x={x + bW / 2} y={topY + bH / 2 + 9} textAnchor="middle" fill={tCol(dc, mx)} fontSize="6" opacity={0.75}>
               {`S:${Math.round(s.ds[i])} W:${s.dw[i].toFixed(2)}`}
@@ -53,7 +48,7 @@ export default function LinearViz({ s, n, mx, phase, cfg }) {
                 <rect x={x} y={midY} width={bW} height={bH} rx={3} fill={cCol(ic, mx)}
                   stroke={isP ? "#8e44ad" : isO ? "#2980b9" : "#3a3a4a"} strokeWidth={isP || isO ? 2 : 1}
                   strokeDasharray={isP || isO ? "none" : "3,2"} />
-                <text x={x + bW / 2} y={midY + bH / 2} textAnchor="middle" fill={tCol(ic, mx)} fontSize="10" fontWeight="700">{ic > 0.5 ? Math.round(ic) : ""}</text>
+                <text x={x + bW / 2} y={midY + bH / 2} textAnchor="middle" fill={tCol(ic, mx)} fontSize="10" fontWeight="700">{Math.round(ic)}</text>
                 <text x={x + bW / 2} y={midY + bH / 2 + 9} textAnchor="middle" fill={tCol(ic, mx)} fontSize="6" opacity={0.75}>
                   {`S:${Math.round(s.is[i])} W:${s.iw[i].toFixed(2)}`}
                 </text>
@@ -64,7 +59,7 @@ export default function LinearViz({ s, n, mx, phase, cfg }) {
             <rect x={x} y={botY} width={bW} height={bH} rx={3} fill={cCol(ac, mx)}
               stroke={isFdA ? "#27ae60" : isP ? "#8e44ad" : isInj ? "#c0392b" : isEx ? "#e67e22" : isFl ? "#3498db" : "#2471a3"}
               strokeWidth={isFdA || isP || isInj || isEx || isFl ? 2 : 1.2} />
-            <text x={x + bW / 2} y={botY + bH / 2} textAnchor="middle" fill={tCol(ac, mx)} fontSize="10" fontWeight="700">{ac > 0.5 ? Math.round(ac) : ""}</text>
+            <text x={x + bW / 2} y={botY + bH / 2} textAnchor="middle" fill={tCol(ac, mx)} fontSize="10" fontWeight="700">{Math.round(ac)}</text>
             <text x={x + bW / 2} y={botY + bH / 2 + 9} textAnchor="middle" fill={tCol(ac, mx)} fontSize="6" opacity={0.75}>
               {`S:${Math.round(s.as[i])} W:${s.aw[i].toFixed(2)}`}
             </text>

@@ -100,7 +100,18 @@ export default function App() {
     }, 30);
   }, [cfg]);
 
-  const upd = useCallback((k, v) => setCfg(p => ({ ...p, [k]: v })), []);
+  const upd = useCallback((k, v) => setCfg(p => {
+    if (k === "scenario") {
+      const sc2 = SC[v];
+      return {
+        ...p,
+        scenario: v,
+        ...(sc2.defaultNumBoxes    != null ? { numBoxes:     sc2.defaultNumBoxes    } : {}),
+        ...(sc2.defaultActiveAmount != null ? { activeAmount: sc2.defaultActiveAmount } : {}),
+      };
+    }
+    return { ...p, [k]: v };
+  }), []);
 
   const dConcs = s.ds.map((_, i) => gc(s.ds[i], s.dw[i]));
   const aConcs = s.as.map((_, i) => gc(s.as[i], s.aw[i]));
@@ -177,7 +188,7 @@ export default function App() {
           <span style={{ color: "#333" }}>┊</span>
           <span style={{ color: "#555" }}>big number = S÷W (mOsm)</span>
           <span style={{ color: "#444" }}>· S=solute mass</span>
-          <span style={{ color: "#444" }}>· W=water vol{sc.hasI ? " (smaller box = less water)" : ""}</span>
+          <span style={{ color: "#444" }}>· W=water vol</span>
         </div>
       </div>
 
