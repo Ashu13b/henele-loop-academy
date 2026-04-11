@@ -165,14 +165,70 @@ export default function App() {
         {sc.isLoop
           ? <UViz s={s} n={n} mx={mx} phase={phase} cfg={cfg} />
           : <LinearViz s={s} n={n} mx={mx} phase={phase} cfg={cfg} />}
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 4, fontSize: 8, color: "#444" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 4, fontSize: 8, color: "#444", flexWrap: "wrap" }}>
           <span>🔵Low</span>
           <span style={{ background: "linear-gradient(90deg,rgb(30,100,200),rgb(240,180,40))", padding: "1px 10px", borderRadius: 3, color: "transparent" }}>.</span>
           <span>🔴High</span>
           {sc.hasI && <span style={{ color: "#5dade2" }}>┊dashed=tissue</span>}
           {sc.hasActive && !sc.hasI && <span style={{ color: "#c0392b" }}>⚠=injection</span>}
+          <span style={{ color: "#333" }}>┊</span>
+          <span style={{ color: "#555" }}>big number = S÷W (mOsm)</span>
+          <span style={{ color: "#444" }}>· S=solute mass</span>
+          <span style={{ color: "#444" }}>· W=water vol{sc.hasI ? " (smaller box = less water)" : ""}</span>
         </div>
       </div>
+
+      {/* Watch / Insight panel */}
+      {(() => {
+        const tipD = gc(s.ds[n - 1], s.dw[n - 1]);
+        const tipA = gc(s.as[n - 1], s.aw[n - 1]);
+        const tipI = sc.hasI ? gc(s.is[n - 1], s.iw[n - 1]) : 0;
+        const tipMax = Math.max(tipD, tipA, tipI);
+        const factor = cfg.initialA > 0 ? tipMax / cfg.initialA : 0;
+        const tipDwater = s.dw[n - 1];
+        const waterLostPct = Math.round((1 - tipDwater) * 100);
+        const exceeded = tipMax > cfg.initialA * 1.05;
+        const isSettled = fullStep >= 15;
+
+        if (!isSettled) {
+          // Before enough cycles: show "what to watch"
+          return (
+            <div style={{ background: "#0d1020", border: "1px solid #1e2a40", borderRadius: 6, padding: "7px 10px", marginBottom: 6, fontSize: 10, color: "#7a8aaa", lineHeight: 1.6 }}>
+              <span style={{ color: "#3a6ea8", fontWeight: 700, marginRight: 6 }}>👁 Watch</span>
+              {sc.watch}
+            </div>
+          );
+        }
+
+        // After enough cycles: show computed insight + key
+        return (
+          <div style={{ background: "#0d1a14", border: `1px solid ${exceeded ? "#1e5c2a" : "#1e3a20"}`, borderRadius: 6, padding: "8px 10px", marginBottom: 6 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 6, fontSize: 10, fontFamily: "monospace" }}>
+              <span style={{ color: exceeded ? "#2ecc71" : "#888" }}>
+                📊 Factor: <strong style={{ fontSize: 12 }}>{factor.toFixed(2)}×</strong>
+                {exceeded ? " ✓ amplified" : " — no amplification"}
+              </span>
+              <span style={{ color: "#c0392b" }}>Tip D: {Math.round(tipD)}</span>
+              <span style={{ color: "#2471a3" }}>Tip A: {Math.round(tipA)}</span>
+              {sc.hasI && <span style={{ color: "#5dade2" }}>Tip I: {Math.round(tipI)}</span>}
+              {sc.hasI && (
+                <span style={{ color: waterLostPct > 5 ? "#e67e22" : "#666" }}>
+                  💧 D tip water: {(tipDwater * 100).toFixed(0)}% left ({waterLostPct > 0 ? `-${waterLostPct}%` : "no loss"})
+                </span>
+              )}
+              {!sc.hasI && sc.hasActive && (
+                <span style={{ color: "#e74c3c" }}>⚠ Fabricated: {Math.round(s.fabricated)}</span>
+              )}
+            </div>
+            <div style={{ fontSize: 10, color: "#99b899", lineHeight: 1.6, borderTop: "1px solid #1a3020", paddingTop: 5 }}>
+              <span style={{ color: exceeded ? "#27ae60" : "#e67e22", fontWeight: 700, marginRight: 6 }}>
+                {exceeded ? "✓ Key" : "⚠ Key"}
+              </span>
+              {sc.key}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Gradient build-up chart */}
       <Chart history={history} scenario={cfg.scenario} />

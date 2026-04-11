@@ -52,4 +52,4 @@ countercurrent_simulator.jsx — source of truth during split, do NOT modify
 [x] src/components/LinearViz.jsx — linear open viz, same Bug4 fix — depends on: constants.js.sig, helpers.js.sig
 [x] src/components/Controls.jsx — scenario tabs, speed, step/run/reset — depends on: constants.js.sig
 [x] src/components/Chart.jsx — Recharts convergence chart — depends on: none
-[ ] src/App.jsx — main app, all state, wires everything — depends on: all .sig files above
+[x] src/App.jsx — main app, all state, wires everything — depends on: all .sig files above
