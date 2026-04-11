@@ -95,6 +95,23 @@ export default function UViz({ s, n, mx, phase, cfg }) {
                 <line x1={ix + bW + 1} y1={y + bH / 2} x2={rx - 1} y2={y + bH / 2}
                   stroke={isP ? "#8e44ad" : "#2a2a3a"} strokeWidth={isP ? 1.5 : 0.7} strokeDasharray={isP ? "none" : "2,2"} />
                 {isP && <text x={(ix + bW + rx) / 2} y={y + bH / 2 - 3} textAnchor="middle" fill="#8e44ad" fontSize="6">←NaCl</text>}
+                {/* Single-effect delta badge: I−A gradient at each medullary box */}
+                {i >= Math.floor(n / 2) && (() => {
+                  const delta = Math.round(ic - ac);
+                  const bColor = delta < 50 ? "#888" : delta <= 250 ? "#e67e22" : "#c0392b";
+                  const midX = (ix + bW + rx) / 2;
+                  const bY = y + bH / 2;
+                  return (
+                    <g>
+                      <rect x={midX - 13} y={bY + 3} width={26} height={11} rx={2}
+                        fill={bColor} fillOpacity={0.15} stroke={bColor} strokeWidth={0.8} />
+                      <text x={midX} y={bY + 11} textAnchor="middle"
+                        fill={bColor} fontSize="6" fontWeight="700">
+                        {delta > 0 ? `+${delta}` : `${delta}`}
+                      </text>
+                    </g>
+                  );
+                })()}
               </>
             ) : (
               <>
