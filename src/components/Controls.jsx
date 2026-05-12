@@ -57,6 +57,22 @@ export default function Controls({
         {sc.hasActive && <NI label={sc.hasI ? "Pump" : "Inject"} value={cfg.activeAmount} min={0} max={500} step={10} onChange={v => onUpdateCfg("activeAmount", v)} />}
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <label style={{ fontSize: 9, color: "#666", fontWeight: 600 }}>
+            ADH <span style={{ color: "#a855f7", fontFamily: "monospace" }}>{Math.round((cfg.adh ?? 0.6) * 100)}%</span>
+          </label>
+          <input type="range" min="0" max="1" step="0.05" value={cfg.adh ?? 0.6}
+            onChange={e => onUpdateCfg("adh", parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#a855f7", cursor: "pointer" }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <label style={{ fontSize: 9, color: "#666", fontWeight: 600 }}>
+            Flow <span style={{ color: "#3a8ef6", fontFamily: "monospace" }}>{Math.round((cfg.flowRate ?? 0.5) * 100)}%</span>
+          </label>
+          <input type="range" min="0.1" max="1" step="0.1" value={cfg.flowRate ?? 0.5}
+            onChange={e => onUpdateCfg("flowRate", parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#3a8ef6", cursor: "pointer" }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <label style={{ fontSize: 9, color: "#666", fontWeight: 600 }}>
             Damp <span style={{ color: "#e67e22", fontFamily: "monospace" }}>{(cfg.damping ?? 1).toFixed(1)}</span>
           </label>
           <input type="range" min="0.1" max="1" step="0.1" value={cfg.damping ?? 1}

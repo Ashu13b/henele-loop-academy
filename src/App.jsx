@@ -8,6 +8,7 @@ import UViz from "./components/UViz.jsx";
 import LinearViz from "./components/LinearViz.jsx";
 import Controls from "./components/Controls.jsx";
 import Chart from "./components/Chart.jsx";
+import SimulationCanvas from "./components/SimulationCanvas.jsx";
 
 const MAX_C = 100000;
 
@@ -20,6 +21,8 @@ export default function App() {
     exchangeRate: 50,
     activeAmount: 200,
     damping: 0.4,
+    adh: 0.6,
+    flowRate: 0.5,
   });
   const [s, setS] = useState(() => mkState(8));
   const [prev, setPrev] = useState(null);
@@ -74,6 +77,7 @@ export default function App() {
         tipD: Math.round(gc(ns.ds[cfg.numBoxes - 1], ns.dw[cfg.numBoxes - 1])),
         tipA: Math.round(gc(ns.as[cfg.numBoxes - 1], ns.aw[cfg.numBoxes - 1])),
         exit: Math.round(gc(ns.as[0], ns.aw[0])),
+        urine: Math.round(gc(ns.cds[cfg.numBoxes - 1], ns.cdw[cfg.numBoxes - 1])),
         ...(SC[cfg.scenario].hasI ? { tipI: Math.round(gc(ns.is[cfg.numBoxes - 1], ns.iw[cfg.numBoxes - 1])) } : {}),
       }]);
     }
@@ -116,14 +120,19 @@ export default function App() {
 
   const dConcs = s.ds.map((_, i) => gc(s.ds[i], s.dw[i]));
   const aConcs = s.as.map((_, i) => gc(s.as[i], s.aw[i]));
+  const cdConcs = s.cds.map((_, i) => gc(s.cds[i], s.cdw[i]));
   const iConcs = sc.hasI ? s.is.map((_, i) => gc(s.is[i], s.iw[i])) : [];
+  const vdConcs = sc.hasI ? s.vds.map((_, i) => gc(s.vds[i], s.vdw[i])) : [];
+  const vaConcs = sc.hasI ? s.vas.map((_, i) => gc(s.vas[i], s.vaw[i])) : [];
+
   const sC = useMemo(() => steadyResult ? {
     d: steadyResult.state.ds.map((_, i) => gc(steadyResult.state.ds[i], steadyResult.state.dw[i])),
     a: steadyResult.state.as.map((_, i) => gc(steadyResult.state.as[i], steadyResult.state.aw[i])),
+    cd: steadyResult.state.cds.map((_, i) => gc(steadyResult.state.cds[i], steadyResult.state.cdw[i])),
     i: sc.hasI ? steadyResult.state.is.map((_, i) => gc(steadyResult.state.is[i], steadyResult.state.iw[i])) : [],
   } : null, [steadyResult, sc.hasI]);
 
-  const allC = [...dConcs, ...aConcs, ...iConcs, ...(sC?.d || []), ...(sC?.a || []), ...(sC?.i || [])];
+  const allC = [...dConcs, ...aConcs, ...cdConcs, ...iConcs, ...(sC?.d || []), ...(sC?.a || []), ...(sC?.cd || []), ...(sC?.i || [])];
   const mx = Math.max(1, ...allC);
   const pi = PI[phase] || PI.idle;
   const expl = explain(phase, s, prev, cfg, fullStep);

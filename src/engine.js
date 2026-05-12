@@ -11,6 +11,9 @@ export function mkState(n) {
     ds: Array(n).fill(300), dw: Array(n).fill(1),
     as: Array(n).fill(300), aw: Array(n).fill(1),
     is: Array(n).fill(300), iw: Array(n).fill(1),
+    vds: Array(n).fill(300), vdw: Array(n).fill(1),
+    vas: Array(n).fill(300), vaw: Array(n).fill(1),
+    cds: Array(n).fill(300), cdw: Array(n).fill(1),
     fabricated: 0, destroyed: 0,
   };
 }
@@ -20,6 +23,9 @@ export function cloneS(s) {
     ds: [...s.ds], dw: [...s.dw],
     as: [...s.as], aw: [...s.aw],
     is: [...s.is], iw: [...s.iw],
+    vds: [...s.vds], vdw: [...s.vdw],
+    vas: [...s.vas], vaw: [...s.vaw],
+    cds: [...s.cds], cdw: [...s.cdw],
     fabricated: s.fabricated, destroyed: s.destroyed,
   };
 }
@@ -31,7 +37,7 @@ export function getPhases(scKey) {
   if (s.hasI) {
     const p = ["feed"];
     if (s.hasActive) p.push("pump");
-    p.push("osmosis", "flow");
+    p.push("osmosis", "exchange_vr", "osmosis_cd", "flow");
     return p;
   }
   const p = ["feed", "exchange"];
@@ -49,6 +55,7 @@ export function runPhase(st, phase, cfg) {
   if (phase === "feed") {
     s.ds[0] = cfg.initialA; s.dw[0] = 1;
     if (!sc.isLoop) { s.as[n - 1] = cfg.initialB; s.aw[n - 1] = 1; }
+    s.vds[0] = 300; s.vdw[0] = 1;
   }
 
   else if (phase === "exchange") {
@@ -92,16 +99,11 @@ export function runPhase(st, phase, cfg) {
       const dc = gc(s.ds[i], s.dw[i]);
       const ic = gc(s.is[i], s.iw[i]);
 
-      // Damped osmotic equilibration: D water moves d-fraction of the way toward
-      // full equilibrium (dw = ds/ic) each step. d=1 → original full-step behaviour;
-      // d<1 → smoother gradient build-up without concentration spikes.
       if (ic > 0.1 && Math.abs(dc - ic) > 0.1) {
         const targetDw = Math.max(s.ds[i] / ic, 0.01);
         s.dw[i] = s.dw[i] + (targetDw - s.dw[i]) * d;
       }
 
-      // A→I passive diffusion — thin ascending limb leaks a small amount of NaCl
-      // to I in medullary boxes only.
       if (i >= Math.floor(n / 2)) {
         const ac2 = gc(s.as[i], s.aw[i]);
         const ic2 = gc(s.is[i], s.iw[i]);
@@ -111,23 +113,61 @@ export function runPhase(st, phase, cfg) {
           s.as[i] -= sm; s.is[i] += sm;
         }
       }
+      // Old Vasa Recta hack removed (moved to exchange_vr)
+    }
+  }
 
-      // Vasa recta restore I toward cortex baseline (300 mOsm, volume 1).
-      // is * 0.98 + 6 → equilibrium 300 without pump; with pump adding 20/cycle
-      //   equilibrium ≈ 1300 mOsm (physiological medullary tip).
-      // iw * 0.95 + 0.05 → fast drain keeps iw ≈ 1.
-      s.is[i] = s.is[i] * 0.98 + 6; s.iw[i] = s.iw[i] * 0.95 + 0.05;
+  else if (phase === "exchange_vr") {
+    for (let i = 0; i < n; i++) {
+      const ic = gc(s.is[i], s.iw[i]);
+      const vdc = gc(s.vds[i], s.vdw[i]);
+      const vac = gc(s.vas[i], s.vaw[i]);
+      
+      const trD = (ic - vdc) * r * 0.4;
+      s.vds[i] += trD; s.is[i] -= trD;
+      
+      const trA = (ic - vac) * r * 0.4;
+      s.vas[i] += trA; s.is[i] -= trA;
+      
+      s.is[i] = s.is[i] * 0.99 + 3; // Lymphatic drain
+      s.iw[i] = s.iw[i] * 0.95 + 0.05; // Fast volume drain
+    }
+  }
+
+  else if (phase === "osmosis_cd") {
+    const d = cfg.damping ?? 1;
+    const adh = cfg.adh ?? 0.6;
+    for (let i = 0; i < n; i++) {
+      const ic = gc(s.is[i], s.iw[i]);
+      const cdc = gc(s.cds[i], s.cdw[i]);
+      
+      if (ic > cdc && ic > 0.1) {
+        const targetDw = Math.max(s.cds[i] / ic, 0.01);
+        s.cdw[i] = s.cdw[i] + (targetDw - s.cdw[i]) * adh * d;
+      }
     }
   }
 
   else if (phase === "flow") {
     const nds = [...s.ds], ndw = [...s.dw];
     const nas = [...s.as], naw = [...s.aw];
+    const nvds = [...s.vds], nvdw = [...s.vdw];
+    const nvas = [...s.vas], nvaw = [...s.vaw];
+    const ncds = [...s.cds], ncdw = [...s.cdw];
+
     if (sc.isLoop) {
       for (let i = n - 1; i > 0; i--) { nds[i] = s.ds[i - 1]; ndw[i] = s.dw[i - 1]; }
       nas[n - 1] = s.ds[n - 1]; naw[n - 1] = s.dw[n - 1];
       for (let i = 0; i < n - 1; i++) { nas[i] = s.as[i + 1]; naw[i] = s.aw[i + 1]; }
       nds[0] = cfg.initialA; ndw[0] = 1;
+
+      for (let i = n - 1; i > 0; i--) { nvds[i] = s.vds[i - 1]; nvdw[i] = s.vdw[i - 1]; }
+      nvas[n - 1] = s.vds[n - 1]; nvaw[n - 1] = s.vdw[n - 1];
+      for (let i = 0; i < n - 1; i++) { nvas[i] = s.vas[i + 1]; nvaw[i] = s.vaw[i + 1]; }
+      nvds[0] = 300; nvdw[0] = 1;
+
+      for (let i = n - 1; i > 0; i--) { ncds[i] = s.cds[i - 1]; ncdw[i] = s.cdw[i - 1]; }
+      ncds[0] = s.as[0]; ncdw[0] = s.aw[0];
     } else {
       for (let i = n - 1; i > 0; i--) { nds[i] = s.ds[i - 1]; ndw[i] = s.dw[i - 1]; }
       for (let i = 0; i < n - 1; i++) { nas[i] = s.as[i + 1]; naw[i] = s.aw[i + 1]; }
@@ -135,6 +175,8 @@ export function runPhase(st, phase, cfg) {
       nas[n - 1] = cfg.initialB; naw[n - 1] = 1;
     }
     s.ds = nds; s.dw = ndw; s.as = nas; s.aw = naw;
+    s.vds = nvds; s.vdw = nvdw; s.vas = nvas; s.vaw = nvaw;
+    s.cds = ncds; s.cdw = ncdw;
   }
 
   return s;
@@ -176,8 +218,15 @@ export function computeSteady(cfg) {
       md = Math.max(md,
         Math.abs(gc(s.ds[i], s.dw[i]) - gc(p.ds[i], p.dw[i])),
         Math.abs(gc(s.as[i], s.aw[i]) - gc(p.as[i], p.aw[i])),
+        Math.abs(gc(s.cds[i], s.cdw[i]) - gc(p.cds[i], p.cdw[i])),
       );
-      if (hasI) md = Math.max(md, Math.abs(gc(s.is[i], s.iw[i]) - gc(p.is[i], p.iw[i])));
+      if (hasI) {
+        md = Math.max(md,
+          Math.abs(gc(s.is[i], s.iw[i]) - gc(p.is[i], p.iw[i])),
+          Math.abs(gc(s.vds[i], s.vdw[i]) - gc(p.vds[i], p.vdw[i])),
+          Math.abs(gc(s.vas[i], s.vaw[i]) - gc(p.vas[i], p.vaw[i])),
+        );
+      }
     }
     if (md < 0.001 && c >= MIN_C) { conv = c + 1; break; }
   }

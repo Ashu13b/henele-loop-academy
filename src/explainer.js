@@ -46,9 +46,20 @@ export function explain(phase, s, prev, cfg, step) {
   if (phase === "osmosis") {
     const tipIc = gc(s.is[n - 1], s.iw[n - 1]);
     const tipDc = gc(s.ds[n - 1], s.dw[n - 1]);
-    let t = `Osmosis: water follows the osmotic gradient. Salty I pulls water out of D (descending limb is water-permeable). D concentrates by losing water — no solute added.`;
+    let t = `Osmosis: salty Interstitium pulls water out of D (descending limb is water-permeable). D concentrates by losing volume — no solute is added.`;
     if (tipIc > 10) t += ` Tip: I=${Math.round(tipIc)}, D=${Math.round(tipDc)} mOsm (D water volume: ${s.dw[n - 1].toFixed(2)}).`;
     return t;
+  }
+
+  if (phase === "exchange_vr") {
+    return `Vasa Recta: Countercurrent blood flow maintains the gradient. VR vessels supply the medulla with oxygen but are designed to not "wash out" the solute gradient — blood equilibrates with tissue as it descends and re-equilibrates as it ascends.`;
+  }
+
+  if (phase === "osmosis_cd") {
+    const urineConc = gc(s.cds[n - 1], s.cdw[n - 1]);
+    const adhPct = Math.round((cfg.adh ?? 0.6) * 100);
+    const diNote = adhPct < 10 ? " (DI: Polyuria/Hypoosmotic)" : "";
+    return `Collecting Duct: ${adhPct}% ADH opens water channels. Urine equilibrates with the salty tissue gradient. Final: ${Math.round(urineConc)} mOsm${diNote}.`;
   }
 
   if (phase === "flow") {

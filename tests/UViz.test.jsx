@@ -28,7 +28,8 @@ describe("UViz", () => {
     const texts = Array.from(container.querySelectorAll("text")).map(t => t.textContent);
     expect(texts.some(t => t.includes("D ↓"))).toBe(true);
     expect(texts.some(t => t.includes("A ↑"))).toBe(true);
-    expect(texts.some(t => t.includes("I (tissue)"))).toBe(true);
+    expect(texts.some(t => t.includes("Tissue"))).toBe(true);
+    expect(texts.some(t => t.includes("CD ↓"))).toBe(true);
   });
 
   it("does not render I column for loop-inj scenario", () => {
@@ -36,14 +37,14 @@ describe("UViz", () => {
     const s = mkState(5);
     const { container } = render(<UViz s={s} n={5} mx={600} phase="idle" cfg={cfg} />);
     const texts = Array.from(container.querySelectorAll("text")).map(t => t.textContent);
-    expect(texts.some(t => t.includes("I (tissue)"))).toBe(false);
+    expect(texts.some(t => t.includes("Tissue"))).toBe(false);
   });
 
   it("Bug 4 fix: S/W labels are rendered", () => {
     const s = mkState(5);
     const { container } = render(<UViz s={s} n={5} mx={600} phase="idle" cfg={CFG} />);
     const texts = Array.from(container.querySelectorAll("text")).map(t => t.textContent);
-    expect(texts.some(t => t.startsWith("S:"))).toBe(true);
+    expect(texts.some(t => t.includes("S:"))).toBe(true);
     expect(texts.some(t => t.includes("W:"))).toBe(true);
   });
 
@@ -52,8 +53,7 @@ describe("UViz", () => {
     const cfg = { ...CFG, numBoxes: 4 };
     const { container } = render(<UViz s={s} n={4} mx={600} phase="idle" cfg={cfg} />);
     const rects = container.querySelectorAll("rect");
-    // 4 rows × 3 columns (D, I, A for henle) = 12 box rects
-    // + 2 medullary delta badges (i >= floor(4/2) = 2) = 14 total
-    expect(rects.length).toBe(14);
+    // 4 rows × 6 columns (D, I, A, CD, VRD, VRA for henle) = 24 box rects
+    expect(rects.length).toBe(24);
   });
 });

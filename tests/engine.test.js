@@ -11,11 +11,14 @@ const BASE_CFG = {
 };
 
 describe("mkState", () => {
-  it("creates arrays of length n", () => {
+  it("creates arrays of length n for all compartments", () => {
     const s = mkState(5);
     expect(s.ds).toHaveLength(5);
     expect(s.as).toHaveLength(5);
     expect(s.is).toHaveLength(5);
+    expect(s.vds).toHaveLength(5);
+    expect(s.vas).toHaveLength(5);
+    expect(s.cds).toHaveLength(5);
   });
 
   it("Bug 2 fix: interstitium starts at 300 baseline, not 0", () => {
@@ -28,6 +31,9 @@ describe("mkState", () => {
     expect(s.dw.every(v => v === 1)).toBe(true);
     expect(s.aw.every(v => v === 1)).toBe(true);
     expect(s.iw.every(v => v === 1)).toBe(true);
+    expect(s.vdw.every(v => v === 1)).toBe(true);
+    expect(s.vaw.every(v => v === 1)).toBe(true);
+    expect(s.cdw.every(v => v === 1)).toBe(true);
   });
 
   it("Bug 7 fix: ds and as start at 300 (isotonic baseline, not 0)", () => {
@@ -55,10 +61,12 @@ describe("cloneS", () => {
 });
 
 describe("getPhases", () => {
-  it("henle has pump, osmosis, flow", () => {
+  it("henle has pump, osmosis, exchange_vr, osmosis_cd, flow", () => {
     const p = getPhases("henle");
     expect(p).toContain("pump");
     expect(p).toContain("osmosis");
+    expect(p).toContain("exchange_vr");
+    expect(p).toContain("osmosis_cd");
     expect(p).toContain("flow");
     expect(p).not.toContain("inject");
     expect(p).not.toContain("exchange");
@@ -122,6 +130,27 @@ describe("runPhase - osmosis (Bug 10b: full equilibration)", () => {
     const r = runPhase(s, "osmosis", cfg);
     // Full equilibration: dw = ds/ic = 600/300 = 2
     expect(r.dw[0]).toBeCloseTo(2, 2);
+  });
+});
+
+describe("runPhase - osmosis_cd", () => {
+  it("CD loses water proportional to ADH", () => {
+    const s = mkState(3);
+    s.cds[0] = 300; s.cdw[0] = 1;
+    s.is[0] = 600; s.iw[0] = 1;
+    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 1.0, damping: 1 }; // Full ADH, no damping
+    const r = runPhase(s, "osmosis_cd", cfg);
+    // Target dw = 300/600 = 0.5. With adh=1.0 and damping=1, should reach 0.5.
+    expect(r.cdw[0]).toBeCloseTo(0.5, 2);
+  });
+
+  it("CD reabsorbs no water when ADH is 0", () => {
+    const s = mkState(3);
+    s.cds[0] = 300; s.cdw[0] = 1;
+    s.is[0] = 600; s.iw[0] = 1;
+    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 0 }; 
+    const r = runPhase(s, "osmosis_cd", cfg);
+    expect(r.cdw[0]).toBe(1);
   });
 });
 

@@ -74,6 +74,9 @@ countercurrent_simulator.jsx — source of truth during split, do NOT modify
 
 Root cause: pump removes a fixed AMOUNT (min(as[i], activeAmount) * d), ignoring aw. When D concentrates heavily at the tip (dw ≈ 0.25), A inherits that tiny water volume via the hairpin. Even removing 4 × 50 = 200 solute units leaves 100 solute / 0.25 water = 400 mOsm at exit — still hyperosmotic. The fix: concentration-based single-effect pump that drives I − A = activeAmount at each medullary box, so A exits the pump zone at I[n/2] − activeAmount ≈ 100–200 mOsm regardless of aw.
 
-[x] src/constants.js — Task E: Add `defaultNumBoxes: 8, defaultActiveAmount: 200` to the `henle` scenario. The App default of numBoxes:3 / activeAmount:50 is too sparse and too weak for the fix to produce a visible hypoosmotic exit. With 8 boxes (4 medullary) and activeAmount:200 the I gradient runs 300→1200 and exit lands near 100 mOsm. No other scenario changes — depends on: constants.js.sig
-
-[x] src/engine.js — Task F: Replace amount-based pump with concentration-based single-effect. Current code: `rem = min(as[i], activeAmount) * d`. New model: at each medullary box compute `ac = gc(as[i], aw[i]); ic = gc(is[i], iw[i]); target = max(0, ic − activeAmount); if ac > target { rem = min((ac − target) * aw[i], as[i]) * d; as[i] -= rem; is[i] += rem; }`. At steady state each pumped box holds A = I − activeAmount. A exits the pump zone at I[n/2] − activeAmount ≈ 100–200 mOsm (clearly hypoosmotic). inject / osmosis / flow phases unchanged — depends on: engine.js.sig, constants.js.sig
+[x] src/constants.js — Task E: Add `defaultNumBoxes: 8, defaultActiveAmount: 200` to the `henle` scenario.
+[x] src/engine.js — Task F: Replace amount-based pump with concentration-based single-effect.
+[x] src/engine.js — Bug 9: Restrict A→I passive diffusion to medullary boxes only.
+[x] src/App.jsx — Change default scenario to "henle" with 8 boxes and 200 activeAmount.
+[x] src/explainer.js — Update pump explanation to match concentration-based model.
+[x] delete countercurrent_simulator.jsx — redundant source of truth.
