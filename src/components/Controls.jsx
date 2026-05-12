@@ -5,51 +5,48 @@ function NI({ label, value, min, max, step = 1, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <label htmlFor={id} style={{ fontSize: 9, color: "#666", fontWeight: 600 }}>{label}</label>
-      <input id={id} type="number" value={value} min={min} max={max} step={step}
-        onChange={e => onChange(parseInt(e.target.value) || 0)}
-        style={{ background: "#0b0b14", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", color: "#ddd", fontSize: 12, fontFamily: "monospace", width: "100%" }} />
+      <input id={id} type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        style={{ width: "100%", accentColor: "#e67e22", cursor: "pointer" }} />
     </div>
   );
 }
 
-function Btn({ label, bg, onClick, style: ex }) {
-  return (
-    <button onClick={onClick} style={{ padding: "7px 12px", borderRadius: 6, border: "none", background: bg, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", ...ex }}>
-      {label}
-    </button>
-  );
-}
-
 export default function Controls({
-  cfg, onUpdateCfg,
+  cfg, onUpdateCfg, activeStage, setActiveStage,
   phase, playing, speedIdx, fullStep, computing,
   onStep, onCycle, onPlay, onSpeedChange, onReset, onSteady,
 }) {
   const sc = SC[cfg.scenario];
   const pi = PI[phase] || PI.idle;
-  const phases = Object.values(PI).filter(p => p !== PI.idle);
-
   const stages = [1, 2, 3, 4];
 
   return (
     <>
-      {/* Academy Curriculum Stages */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
-        {stages.map(st => (
-          <div key={st} style={{ background: "#0b0b14", border: "1px solid #222", borderRadius: 6, padding: "4px 6px" }}>
-            <div style={{ fontSize: 8, fontWeight: 800, color: "#444", marginBottom: 3, textTransform: "uppercase", letterSpacing: 1 }}>Stage {st}</div>
-            <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-              {Object.entries(SC).filter(([_, v]) => v.stage === st).map(([k, v]) => (
-                <button key={k} onClick={() => onUpdateCfg("scenario", k)} style={{
-                  padding: "4px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, cursor: "pointer",
-                  border: cfg.scenario === k ? "1px solid #e67e22" : "1px solid #2a2a3a",
-                  background: cfg.scenario === k ? "#2a1f0e" : "#14142a",
-                  color: cfg.scenario === k ? "#e67e22" : "#777",
-                  flex: 1, minWidth: "60px"
-                }}>{v.short}</button>
-              ))}
-            </div>
-          </div>
+      {/* Academy Curriculum Stages: Horizontal Tabs */}
+      <div style={{ background: "#14142a", borderRadius: 6, padding: 3, border: "1px solid #222", marginBottom: 6 }}>
+        <div style={{ display: "flex", gap: 3 }}>
+          {stages.map(st => (
+            <button key={st} onClick={() => setActiveStage(st)} style={{
+              flex: 1, padding: "5px 2px", borderRadius: 4, fontSize: 9, fontWeight: 800, cursor: "pointer", border: "none",
+              background: activeStage === st ? "#2471a3" : "transparent",
+              color: activeStage === st ? "#fff" : "#555",
+              transition: "all 0.2s"
+            }}>STAGE {st}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sub-scenarios for Active Stage */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+        {Object.entries(SC).filter(([_, v]) => v.stage === activeStage).map(([k, v]) => (
+          <button key={k} onClick={() => onUpdateCfg("scenario", k)} style={{
+            padding: "6px 8px", borderRadius: 5, fontSize: 10, fontWeight: 700, cursor: "pointer",
+            border: cfg.scenario === k ? "1px solid #e67e22" : "1px solid #2a2a3a",
+            background: cfg.scenario === k ? "#2a1f0e" : "#0b0b14",
+            color: cfg.scenario === k ? "#e67e22" : "#777",
+            flex: 1, minWidth: "80px", textAlign: "center"
+          }}>{v.short}</button>
         ))}
       </div>
 
@@ -58,12 +55,12 @@ export default function Controls({
         {sc.desc}
       </div>
 
-      {/* Config inputs */}
+      {/* Main Simulation Sliders */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 5, background: "#14142a", padding: 6, borderRadius: 5, border: "1px solid #222240", marginBottom: 6 }}>
-        <NI label="Segments" value={cfg.numBoxes} min={2} max={20} onChange={v => onUpdateCfg("numBoxes", v)} />
-        <NI label="Input" value={cfg.initialA} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialA", v)} />
-        {!sc.isLoop && <NI label="B Input" value={cfg.initialB} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialB", v)} />}
-        <NI label={sc.hasI ? "Perm %" : "Exch %"} value={cfg.exchangeRate} min={0} max={100} step={5} onChange={v => onUpdateCfg("exchangeRate", v)} />
+        <NI label="Segments" value={cfg.numBoxes} min={1} max={20} onChange={v => onUpdateCfg("numBoxes", v)} />
+        <NI label="D Input" value={cfg.initialA} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialA", v)} />
+        {!sc.isLoop && <NI label="A Input" value={cfg.initialB} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialB", v)} />}
+        <NI label="Exchange" value={cfg.exchangeRate} min={0} max={100} step={5} onChange={v => onUpdateCfg("exchangeRate", v)} />
         {sc.hasActive && <NI label={sc.hasI ? "Pump" : "Inject"} value={cfg.activeAmount} min={0} max={500} step={10} onChange={v => onUpdateCfg("activeAmount", v)} />}
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <label style={{ fontSize: 9, color: "#666", fontWeight: 600 }}>
@@ -91,35 +88,24 @@ export default function Controls({
         </div>
       </div>
 
-      {/* Phase indicator */}
-      <div style={{ background: pi.color + "12", border: `2px solid ${pi.color}`, borderRadius: 6, padding: "6px 8px", marginBottom: 6, height: 72, minHeight: 72, maxHeight: 72, display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: pi.color, marginBottom: 3, flexShrink: 0 }}>
-          {pi.icon} {pi.label}
-        </div>
-        {/* Phase sequence hint */}
-        <div style={{ fontSize: 9, color: "#555", marginTop: "auto" }}>
-          {phases.map(p => p.label).join(" → ")}
-        </div>
+      {/* Control Buttons */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+        <button onClick={onReset} style={{ flex: 1, padding: "7px", background: "#333", color: "#eee", borderRadius: 4, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Reset</button>
+        <button onClick={onStep} disabled={playing || computing} style={{ flex: 2, padding: "7px", background: "#27ae60", color: "#fff", borderRadius: 4, fontSize: 10, fontWeight: 700, cursor: "pointer", opacity: (playing || computing) ? 0.5 : 1 }}>Step →</button>
+        <button onClick={onCycle} disabled={playing || computing} style={{ flex: 2, padding: "7px", background: "#2980b9", color: "#fff", borderRadius: 4, fontSize: 10, fontWeight: 700, cursor: "pointer", opacity: (playing || computing) ? 0.5 : 1 }}>Cycle ↻</button>
+        <button onClick={onPlay} style={{ flex: 1, padding: "7px", background: playing ? "#c0392b" : "#2471a3", color: "#fff", borderRadius: 4, fontSize: 13, cursor: "pointer" }}>{playing ? "⏸" : "▶"}</button>
+        <button onClick={onSpeedChange} style={{ flex: 1.5, padding: "7px", background: "#444", color: "#eee", borderRadius: 4, fontSize: 9, fontWeight: 700, cursor: "pointer" }}>{SPEEDS[speedIdx].label}</button>
+        <button onClick={onSteady} disabled={computing} style={{ flex: 2, padding: "7px", background: "#8e44ad", color: "#fff", borderRadius: 4, fontSize: 9, fontWeight: 700, cursor: "pointer", opacity: computing ? 0.5 : 1 }}>{computing ? "..." : "Steady SS"}</button>
       </div>
 
-      {/* Action buttons */}
-      <div style={{ display: "flex", gap: 4, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
-        <Btn label="Reset" bg="#444" onClick={onReset} />
-        <Btn label="Step →" bg={pi.color} onClick={onStep} />
-        <Btn label="Cycle ⟳" bg="#2471a3" onClick={onCycle} />
-        <Btn label={playing ? "⏸" : "▶"} bg={playing ? "#c0392b" : "#27ae60"} onClick={onPlay} />
-        <button
-          onClick={onSpeedChange}
-          style={{ padding: "6px 10px", borderRadius: 5, border: "1px solid #444", background: "#1a1a30", color: "#aaa", fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
-          🏎 {SPEEDS[speedIdx].label}
-        </button>
-        <Btn
-          label={computing ? "⏳" : "∞"}
-          bg="#6c3483"
-          onClick={computing ? undefined : onSteady}
-          style={{ fontSize: 15, padding: "4px 14px", opacity: computing ? 0.6 : 1 }}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#14142a", padding: "3px 8px", borderRadius: 5, border: "1px solid #333" }}>
+      {/* Playback Progress Indicator */}
+      <div style={{ background: "#14142a", borderRadius: 5, padding: "5px 10px", border: "1px solid #222", display: "flex", alignItems: "center", gap: 8, height: 26 }}>
+        <div style={{ display: "flex", gap: 2, flex: 1 }}>
+          {Object.values(PI).filter(p => p !== PI.idle).map(p => (
+            <div key={p.label} style={{ height: 4, flex: 1, borderRadius: 2, background: pi.label === p.label ? p.color : "#222", transition: "background 0.3s" }} title={p.label} />
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
           <span style={{ color: "#e67e22", fontFamily: "monospace", fontSize: 13, fontWeight: 700 }}>{fullStep}</span>
           <span style={{ color: "#555", fontSize: 8 }}>cyc</span>
         </div>

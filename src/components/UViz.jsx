@@ -4,26 +4,35 @@ import { gc, cCol, tCol } from "../helpers.js";
 export default function UViz({ s, n, mx, phase, cfg }) {
   const sc = SC[cfg.scenario];
   const hasI = sc.hasI;
+  const hasVR = sc.hasVR;
+  const hasCD = sc.hasCD;
   const showExit = sc.isLoop;
   
-  const bW = 38, bH = 34, cGap = 16, rowGap = 8;
+  // High-fidelity spacing for Pro View
+  const bW = 38, bH = 34, cGap = 16, rowGap = 16;
   const lx = 20;
   const ix = hasI ? lx + bW + cGap : 0; // Center area for Tissue/Connectors
   const rx = hasI ? ix + bW + cGap : lx + bW + 30;
-  const cdx = hasI ? rx + bW + cGap : 0;
-  const vdx = hasI ? cdx + bW + cGap : 0;
-  const vax = hasI ? vdx + bW + cGap : 0;
+  
+  // Incremental Logic: Only assign X coordinates if the scenario has these features
+  const cdx = hasCD ? rx + bW + cGap : 0;
+  const vdx = hasVR ? (hasCD ? cdx + bW + cGap : rx + bW + cGap) : 0;
+  const vax = hasVR ? vdx + bW + cGap : 0;
 
   const sy = showExit ? 36 : 22;
   const svgH = sy + n * (bH + rowGap) + 36;
-  const svgW = hasI ? vax + bW + 20 : rx + bW + 30;
-  const exitConc = showExit ? gc(s.as[0], s.aw[0]) : 0;
+  
+  // Dynamic Width based on visible columns
+  let svgW = rx + bW + 30;
+  if (hasCD) svgW = cdx + bW + 30;
+  if (hasVR) svgW = vax + bW + 30;
 
-  // Interstitium Gradient Stops
+  const exitConc = showExit ? gc(s.as[0], s.aw[0]) : 0;
   const iConcs = hasI ? Array.from({ length: n }).map((_, i) => gc(s.is[i], s.iw[i])) : [];
+  const isFl = phase === "flow";
 
   return (
-    <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ maxWidth: hasI ? 480 : 260, margin: "0 auto", display: "block", background: "#0b0b14", borderRadius: 8 }}>
+    <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ maxWidth: svgW * 1.5, margin: "0 auto", display: "block", background: "#0b0b14", borderRadius: 8 }}>
       <defs>
         <linearGradient id="interGradient" x1="0" y1="0" x2="0" y2="1">
           {iConcs.map((c, i) => (
@@ -40,11 +49,18 @@ export default function UViz({ s, n, mx, phase, cfg }) {
       {/* Header Labels */}
       <text x={lx + bW / 2} y={12} textAnchor="middle" fill="#c0392b" fontSize="8" fontWeight="700">DESC ↓</text>
       <text x={rx + bW / 2} y={12} textAnchor="middle" fill="#2471a3" fontSize="8" fontWeight="700">ASC ↑</text>
+      
+      {hasCD && <text x={cdx + bW / 2} y={12} textAnchor="middle" fill="#a855f7" fontSize="8" fontWeight="700">CD ↓</text>}
+      
+      {hasVR && (
+        <>
+          <text x={vdx + bW / 2} y={12} textAnchor="middle" fill="#e74c3c" fontSize="7" fontWeight="600">VR ↓</text>
+          <text x={vax + bW / 2} y={12} textAnchor="middle" fill="#e74c3c" fontSize="7" fontWeight="600">VR ↑</text>
+        </>
+      )}
+
       {hasI && (
         <>
-          <text x={cdx + bW / 2} y={12} textAnchor="middle" fill="#a855f7" fontSize="8" fontWeight="700">CD ↓</text>
-          <text x={(vdx + vax + bW) / 2} y={12} textAnchor="middle" fill="#e74c3c" fontSize="7" fontWeight="600">VASA RECTA</text>
-          {/* Tissue Labels */}
           <text x={ix + bW / 2} y={sy - 4} textAnchor="middle" fill="#888" fontSize="6" fontWeight="700">TISSUE: {Math.round(iConcs[0])} mOsm</text>
           <text x={ix + bW / 2} y={sy + n * (bH + rowGap)} textAnchor="middle" fill="#888" fontSize="6" fontWeight="700">{Math.round(iConcs[n-1])} mOsm</text>
         </>
@@ -62,22 +78,15 @@ export default function UViz({ s, n, mx, phase, cfg }) {
         const y = sy + i * (bH + rowGap);
         const dc = gc(s.ds[i], s.dw[i]);
         const ac = gc(s.as[i], s.aw[i]);
-        const ic = hasI ? iConcs[i] : 0;
-        const cdc = hasI ? gc(s.cds[i], s.cdw[i]) : 0;
-        const vdc = hasI ? gc(s.vds[i], s.vdw[i]) : 0;
-        const vac = hasI ? gc(s.vas[i], s.vaw[i]) : 0;
-
+        
         const isP  = phase === "pump"     && i >= Math.floor(n / 2);
         const isO  = phase === "osmosis";
         const isOCD = phase === "osmosis_cd";
         const isEVR = phase === "exchange_vr";
-        const isFl = phase === "flow";
         const isFd = phase === "feed"     && i === 0;
 
         return (
           <g key={i}>
-            {/* Tubules with slightly transparent fill to show gradient behind them */}
-            
             {/* D column */}
             <rect x={lx} y={y} width={bW} height={bH} rx={4} fill={cCol(dc, mx)} fillOpacity="0.9"
               stroke={isFd ? "#27ae60" : isFl ? "#3498db" : "#ffffff44"} strokeWidth={isFd || isFl ? 2 : 0.5} />
@@ -95,40 +104,47 @@ export default function UViz({ s, n, mx, phase, cfg }) {
             </text>
 
             {/* CD column */}
-            {hasI && (
+            {hasCD && (
               <>
-                <rect x={cdx} y={y} width={bW} height={bH} rx={4} fill={cCol(cdc, mx)} fillOpacity="0.9"
+                <rect x={cdx} y={y} width={bW} height={bH} rx={4} fill={cCol(gc(s.cds[i], s.cdw[i]), mx)} fillOpacity="0.9"
                   stroke={isOCD ? "#a855f7" : "#ffffff44"} strokeWidth={isOCD ? 2 : 0.5} />
-                <text x={cdx + bW / 2} y={y + bH / 2} textAnchor="middle" fill={tCol(cdc, mx)} fontSize="9" fontWeight="700">{Math.round(cdc)}</text>
-                <text x={cdx + bW / 2} y={y + bH / 2 + 8} textAnchor="middle" fill={tCol(cdc, mx)} fontSize="5" opacity={0.8}>
+                <text x={cdx + bW / 2} y={y + bH / 2} textAnchor="middle" fill={tCol(gc(s.cds[i], s.cdw[i]), mx)} fontSize="9" fontWeight="700">{Math.round(gc(s.cds[i], s.cdw[i]))}</text>
+                <text x={cdx + bW / 2} y={y + bH / 2 + 8} textAnchor="middle" fill={tCol(gc(s.cds[i], s.cdw[i]), mx)} fontSize="5" opacity={0.8}>
                   {`S:${Math.round(s.cds[i])} W:${s.cdw[i].toFixed(2)}`}
                 </text>
               </>
             )}
 
-            {/* VR columns (combined color) */}
-            {hasI && (
+            {/* VR columns */}
+            {hasVR && (
               <>
-                <rect x={vdx} y={y} width={bW} height={bH} rx={4} fill={cCol(vdc, mx)} fillOpacity="0.9"
+                <rect x={vdx} y={y} width={bW} height={bH} rx={4} fill={cCol(gc(s.vds[i], s.vdw[i]), mx)} fillOpacity="0.9"
                   stroke={isEVR ? "#e74c3c" : "#ffffff22"} strokeWidth={isEVR ? 2 : 0.5} />
-                <text x={vdx + bW / 2} y={y + bH / 2} textAnchor="middle" fill={tCol(vdc, mx)} fontSize="9" fontWeight="700">{Math.round(vdc)}</text>
+                <text x={vdx + bW / 2} y={y + bH / 2} textAnchor="middle" fill={tCol(gc(s.vds[i], s.vdw[i]), mx)} fontSize="9" fontWeight="700">{Math.round(gc(s.vds[i], s.vdw[i]))}</text>
                 
-                <rect x={vax} y={y} width={bW} height={bH} rx={4} fill={cCol(vac, mx)} fillOpacity="0.9"
+                <rect x={vax} y={y} width={bW} height={bH} rx={4} fill={cCol(gc(s.vas[i], s.vaw[i]), mx)} fillOpacity="0.9"
                   stroke={isEVR ? "#e74c3c" : "#ffffff22"} strokeWidth={isEVR ? 2 : 0.5} />
-                <text x={vax + bW / 2} y={y + bH / 2} textAnchor="middle" fill={tCol(vac, mx)} fontSize="9" fontWeight="700">{Math.round(vac)}</text>
+                <text x={vax + bW / 2} y={y + bH / 2} textAnchor="middle" fill={tCol(gc(s.vas[i], s.vaw[i]), mx)} fontSize="9" fontWeight="700">{Math.round(gc(s.vas[i], s.vaw[i]))}</text>
               </>
             )}
 
-            {/* Dynamic Flow Arrows/Markers */}
+            {/* Dynamic Markers */}
             {hasI && isO && <text x={lx + bW + 8} y={y + bH/2 + 2} fill="#3498db" fontSize="10" fontWeight="bold">→💧</text>}
-            {hasI && isP && <text x={rx - 10} y={y + bH/2 + 2} textAnchor="end" fill="#8e44ad" fontSize="10" fontWeight="bold">🧂→</text>}
-            {hasI && isOCD && <text x={cdx - 12} y={y + bH/2 + 2} fill="#a855f7" fontSize="10" fontWeight="bold">←💧</text>}
+            {hasI && isP && <text x={rx - 12} y={y + bH/2 + 2} textAnchor="end" fill="#8e44ad" fontSize="10" fontWeight="bold">←🧂</text>}
+            {hasCD && isOCD && <text x={cdx - 12} y={y + bH/2 + 2} fill="#a855f7" fontSize="10" fontWeight="bold">←💧</text>}
 
-            {/* Flow arrows between rows */}
+            {/* Thick Flow Arrows in the Gaps */}
             {i < n - 1 && (
               <>
-                <text x={lx + bW / 2} y={y + bH + rowGap / 2 + 3} textAnchor="middle" fill={isFl ? "#3498db" : "#333"} fontSize="8">↓</text>
-                <text x={rx + bW / 2} y={y + bH + rowGap / 2 + 3} textAnchor="middle" fill={isFl ? "#3498db" : "#333"} fontSize="8">↑</text>
+                <text x={lx + bW / 2} y={y + bH + rowGap / 2 + 5} textAnchor="middle" fill={isFl ? "#3498db" : "#333"} fontSize="12" fontWeight="900">↓</text>
+                <text x={rx + bW / 2} y={y + bH + rowGap / 2 + 5} textAnchor="middle" fill={isFl ? "#3498db" : "#333"} fontSize="12" fontWeight="900">↑</text>
+                {hasCD && <text x={cdx + bW / 2} y={y + bH + rowGap / 2 + 5} textAnchor="middle" fill={isFl ? "#3498db" : "#333"} fontSize="12" fontWeight="900">↓</text>}
+                {hasVR && (
+                  <>
+                    <text x={vdx + bW / 2} y={y + bH + rowGap / 2 + 5} textAnchor="middle" fill={isFl ? "#3498db" : "#333"} fontSize="12" fontWeight="900">↓</text>
+                    <text x={vax + bW / 2} y={y + bH + rowGap / 2 + 5} textAnchor="middle" fill={isFl ? "#3498db" : "#333"} fontSize="12" fontWeight="900">↑</text>
+                  </>
+                )}
               </>
             )}
           </g>
@@ -144,14 +160,13 @@ export default function UViz({ s, n, mx, phase, cfg }) {
           <g>
             <path d={`M ${lx + bW / 2} ${tipY} Q ${lx + bW / 2} ${tipY + 12} ${midX} ${tipY + 12} Q ${rx + bW / 2} ${tipY + 12} ${rx + bW / 2} ${tipY}`}
               fill="none" stroke="#444" strokeWidth="1.5" strokeDasharray="3,2" />
-            {hasI && (
+            {hasVR && (
               <path d={`M ${vdx + bW / 2} ${tipY} Q ${vdx + bW / 2} ${tipY + 8} ${vrMidX} ${tipY + 8} Q ${vax + bW / 2} ${tipY + 8} ${vax + bW / 2} ${tipY}`}
                 fill="none" stroke="#444" strokeWidth="1" strokeDasharray="2,2" />
             )}
           </g>
         );
       })()}
-
     </svg>
   );
 }

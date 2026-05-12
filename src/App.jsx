@@ -31,6 +31,7 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [speedIdx, setSpeedIdx] = useState(1);
+  const [activeStage, setActiveStage] = useState(1);
   const [showSteady, setShowSteady] = useState(false);
   const [steadyResult, setSteadyResult] = useState(null);
   const [computing, setComputing] = useState(false);
@@ -118,6 +119,33 @@ export default function App() {
     return { ...p, [k]: v };
   }), []);
 
+  // Keyboard Navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+        
+        if (e.key === "ArrowUp") setActiveStage(p => Math.max(1, p - 1));
+        if (e.key === "ArrowDown") setActiveStage(p => Math.min(4, p + 1));
+        if (e.key === "ArrowRight") advance();
+        
+        if (e.key === "ArrowLeft") {
+          const stageScenarios = Object.entries(SC).filter(([_, v]) => v.stage === activeStage);
+          const currentIdx = stageScenarios.findIndex(([k]) => k === cfg.scenario);
+          if (currentIdx > 0) upd("scenario", stageScenarios[currentIdx - 1][0]);
+          else if (currentIdx === 0 && activeStage > 1) {
+             const prevStage = activeStage - 1;
+             const prevScenarios = Object.entries(SC).filter(([_, v]) => v.stage === prevStage);
+             setActiveStage(prevStage);
+             upd("scenario", prevScenarios[prevScenarios.length - 1][0]);
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeStage, cfg.scenario, advance, upd]);
+
   const dConcs = s.ds.map((_, i) => gc(s.ds[i], s.dw[i]));
   const aConcs = s.as.map((_, i) => gc(s.as[i], s.aw[i]));
   const cdConcs = s.cds.map((_, i) => gc(s.cds[i], s.cdw[i]));
@@ -150,6 +178,8 @@ export default function App() {
       <Controls
         cfg={cfg}
         onUpdateCfg={upd}
+        activeStage={activeStage}
+        setActiveStage={setActiveStage}
         phase={phase}
         playing={playing}
         speedIdx={speedIdx}

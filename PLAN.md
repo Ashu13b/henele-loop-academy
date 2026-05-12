@@ -80,3 +80,13 @@ Root cause: pump removes a fixed AMOUNT (min(as[i], activeAmount) * d), ignoring
 [x] src/App.jsx — Change default scenario to "henle" with 8 boxes and 200 activeAmount.
 [x] src/explainer.js — Update pump explanation to match concentration-based model.
 [x] delete countercurrent_simulator.jsx — redundant source of truth.
+
+## New Tasks — "Henele Pro" Merge & Academy Schema
+
+[x] Merge `myapp` logic into `Henele` — Port Vasa Recta (blood flow) and Collecting Duct (urine) math to `engine.js`.
+[x] Port Canvas View — Create `SimulationCanvas.jsx` based on `myapp` renderer for dynamic heatmap visualization.
+[x] Unified Pro View — Integrate smooth gradient background into `UViz.jsx` and remove view toggle for a single "Pro" interface.
+[x] Henele Academy Schema — Refactor scenarios into a 4-stage curriculum (Foundation, Multiplication, System, Clinical).
+[x] UI/UX Improvements — Add horizontal stage tabs, keyboard arrow navigation, and high-visibility flow indicators.
+[x] Clinical Scenarios — Implement Furosemide (washout) and Diabetes Insipidus (ADH=0) validation cases.
+[x] Physiological Accuracy — Fix ascending limb pump arrow direction and add dynamic transport markers to all views.
