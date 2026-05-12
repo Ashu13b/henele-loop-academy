@@ -10,34 +10,34 @@ const HISTORY = [
 
 describe("Chart", () => {
   it("renders nothing when history has fewer than 2 entries", () => {
-    const { container } = render(<Chart history={[HISTORY[0]]} scenario="henle" />);
+    const { container } = render(<Chart history={[HISTORY[0]]} scenario="s2-multiplier" />);
     expect(container.firstChild).toBeNull();
   });
 
   it("renders a chart when history has 2+ entries", () => {
-    const { container } = render(<Chart history={HISTORY} scenario="henle" />);
+    const { container } = render(<Chart history={HISTORY} scenario="s2-multiplier" />);
     expect(container.firstChild).toBeTruthy();
   });
 
   it("renders without crashing for empty history", () => {
-    const { container } = render(<Chart history={[]} scenario="open" />);
+    const { container } = render(<Chart history={[]} scenario="s1-exchange" />);
     expect(container.firstChild).toBeNull();
   });
 
   it("shows title text", () => {
-    const { getByText } = render(<Chart history={HISTORY} scenario="open" />);
+    const { getByText } = render(<Chart history={HISTORY} scenario="s1-exchange" />);
     expect(getByText("Gradient Build-up")).toBeTruthy();
   });
 
   it("renders Tip I line for hasI scenarios", () => {
     const historyWithI = HISTORY.map(h => ({ ...h, tipI: h.tipD + 50 }));
-    const { container } = render(<Chart history={historyWithI} scenario="henle" />);
+    const { container } = render(<Chart history={historyWithI} scenario="s2-multiplier" />);
     // Recharts renders legend items — check for Tip I text
     expect(container.textContent).toContain("Tip I");
   });
 
   it("does not render Tip I line for non-hasI scenarios", () => {
-    const { container } = render(<Chart history={HISTORY} scenario="loop" />);
+    const { container } = render(<Chart history={HISTORY} scenario="s1-hairpin" />);
     expect(container.textContent).not.toContain("Tip I");
   });
 });

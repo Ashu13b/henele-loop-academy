@@ -37,12 +37,15 @@ export function getPhases(scKey) {
   if (s.hasI) {
     const p = ["feed"];
     if (s.hasActive) p.push("pump");
-    p.push("osmosis", "exchange_vr", "osmosis_cd", "flow");
+    p.push("osmosis");
+    if (s.hasVR) p.push("exchange_vr");
+    if (s.hasCD) p.push("osmosis_cd");
+    if (!s.isStatic) p.push("flow");
     return p;
   }
   const p = ["feed", "exchange"];
   if (s.hasActive) p.push("inject");
-  p.push("flow");
+  if (!s.isStatic) p.push("flow");
   return p;
 }
 
@@ -51,6 +54,9 @@ export function runPhase(st, phase, cfg) {
   const n = cfg.numBoxes;
   const s = cloneS(st);
   const r = cfg.exchangeRate / 100;
+  
+  const activeAmount = sc.activeAmountOverride !== undefined ? sc.activeAmountOverride : cfg.activeAmount;
+  const adh = sc.adhOverride !== undefined ? sc.adhOverride : (cfg.adh ?? 0.6);
 
   if (phase === "feed") {
     s.ds[0] = cfg.initialA; s.dw[0] = 1;
@@ -69,7 +75,7 @@ export function runPhase(st, phase, cfg) {
   else if (phase === "inject") {
     let fab = 0, dest = 0;
     for (let i = n - 1; i >= Math.floor(n / 2); i--) {
-      const rem = Math.min(s.as[i], cfg.activeAmount);
+      const rem = Math.min(s.as[i], activeAmount);
       s.as[i] -= rem;
       s.ds[i] += rem * 0.5;
       fab += rem * 0.5;
@@ -84,7 +90,7 @@ export function runPhase(st, phase, cfg) {
     for (let i = n - 1; i >= Math.floor(n / 2); i--) {
       const ac = gc(s.as[i], s.aw[i]);
       const ic = gc(s.is[i], s.iw[i]);
-      const target = Math.max(0, ic - cfg.activeAmount);
+      const target = Math.max(0, ic - activeAmount);
       if (ac > target) {
         const rem = Math.min((ac - target) * s.aw[i], s.as[i]) * d;
         s.as[i] -= rem;
@@ -113,7 +119,6 @@ export function runPhase(st, phase, cfg) {
           s.as[i] -= sm; s.is[i] += sm;
         }
       }
-      // Old Vasa Recta hack removed (moved to exchange_vr)
     }
   }
 
@@ -136,7 +141,6 @@ export function runPhase(st, phase, cfg) {
 
   else if (phase === "osmosis_cd") {
     const d = cfg.damping ?? 1;
-    const adh = cfg.adh ?? 0.6;
     for (let i = 0; i < n; i++) {
       const ic = gc(s.is[i], s.iw[i]);
       const cdc = gc(s.cds[i], s.cdw[i]);

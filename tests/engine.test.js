@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { mkState, cloneS, getPhases, runPhase, runCycle, computeSteady } from "../src/engine.js";
 
 const BASE_CFG = {
-  scenario: "henle",
+  scenario: "s2-multiplier",
   numBoxes: 5,
   initialA: 300,
   initialB: 300,
@@ -61,30 +61,19 @@ describe("cloneS", () => {
 });
 
 describe("getPhases", () => {
-  it("henle has pump, osmosis, exchange_vr, osmosis_cd, flow", () => {
-    const p = getPhases("henle");
+  it("s2-multiplier has pump, osmosis, flow", () => {
+    const p = getPhases("s2-multiplier");
     expect(p).toContain("pump");
     expect(p).toContain("osmosis");
-    expect(p).toContain("exchange_vr");
-    expect(p).toContain("osmosis_cd");
     expect(p).toContain("flow");
-    expect(p).not.toContain("inject");
-    expect(p).not.toContain("exchange");
   });
 
-  it("loop-inj has inject and flow, no pump/osmosis", () => {
-    const p = getPhases("loop-inj");
-    expect(p).toContain("inject");
+  it("s1-exchange has exchange and flow, no pump/osmosis", () => {
+    const p = getPhases("s1-exchange");
+    expect(p).toContain("exchange");
     expect(p).toContain("flow");
     expect(p).not.toContain("pump");
     expect(p).not.toContain("osmosis");
-  });
-
-  it("open has exchange but no inject/pump", () => {
-    const p = getPhases("open");
-    expect(p).toContain("exchange");
-    expect(p).not.toContain("inject");
-    expect(p).not.toContain("pump");
   });
 });
 
@@ -102,7 +91,7 @@ describe("runPhase - feed", () => {
   });
 
   it("open scenario: sets A[n-1] to initialB", () => {
-    const cfg = { ...BASE_CFG, scenario: "open" };
+    const cfg = { ...BASE_CFG, scenario: "s1-exchange" };
     const s = mkState(5);
     const r = runPhase(s, "feed", cfg);
     expect(r.as[4]).toBe(cfg.initialB);
@@ -181,8 +170,8 @@ describe("computeSteady", () => {
     expect(result.snapshots.length).toBeGreaterThan(0);
   });
 
-  it("open-i scenario runs without crashing (Bug 1 regression)", () => {
-    const cfg = { ...BASE_CFG, scenario: "open-i", numBoxes: 3 };
+  it("s1-exchange scenario runs without crashing", () => {
+    const cfg = { ...BASE_CFG, scenario: "s1-exchange", numBoxes: 3 };
     expect(() => computeSteady(cfg)).not.toThrow();
   });
 });

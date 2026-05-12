@@ -14,7 +14,7 @@ const MAX_C = 100000;
 
 export default function App() {
   const [cfg, setCfg] = useState({
-    scenario: "henle",
+    scenario: "s1-exchange",
     numBoxes: 8,
     initialA: 300,
     initialB: 0,

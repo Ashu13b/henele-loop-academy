@@ -13,10 +13,10 @@ describe("App", () => {
     expect(getByText("Countercurrent Simulator")).toBeTruthy();
   });
 
-  it("renders scenario tabs", () => {
+  it("renders scenario stages", () => {
     const { getByText } = render(<App />);
-    expect(getByText("Open")).toBeTruthy();
-    expect(getByText("Henle")).toBeTruthy();
+    expect(getByText("Exchange")).toBeTruthy();
+    expect(getByText("Multiplier")).toBeTruthy();
   });
 
   it("Step button advances phase", () => {
@@ -41,7 +41,7 @@ describe("App", () => {
     const { getByText } = render(<App />);
     fireEvent.click(getByText("Step →"));
     expect(getByText("①")).toBeTruthy();
-    fireEvent.click(getByText("Loop"));
+    fireEvent.click(getByText("Hairpin"));
     // After scenario switch, should be back to idle
     expect(getByText("⏸")).toBeTruthy();
   });

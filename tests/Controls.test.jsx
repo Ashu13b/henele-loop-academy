@@ -3,7 +3,7 @@ import { render, fireEvent } from "@testing-library/react";
 import Controls from "../src/components/Controls.jsx";
 
 const CFG = {
-  scenario: "henle",
+  scenario: "s2-multiplier",
   numBoxes: 5,
   initialA: 300,
   initialB: 300,
@@ -35,24 +35,25 @@ describe("Controls", () => {
     expect(container.firstChild).toBeTruthy();
   });
 
-  it("renders all 6 scenario tabs", () => {
-    const { getAllByRole } = render(<Controls {...DEFAULT_PROPS} />);
-    const buttons = getAllByRole("button");
-    // 6 scenario + Reset + Step + Cycle + Play + Speed + Steady + (possible others)
-    expect(buttons.length).toBeGreaterThanOrEqual(6);
+  it("renders all scenario stages", () => {
+    const { getByText } = render(<Controls {...DEFAULT_PROPS} />);
+    expect(getByText(/Stage 1/i)).toBeTruthy();
+    expect(getByText(/Stage 2/i)).toBeTruthy();
+    expect(getByText(/Stage 3/i)).toBeTruthy();
+    expect(getByText(/Stage 4/i)).toBeTruthy();
   });
 
-  it("active scenario tab is highlighted (henle)", () => {
+  it("active scenario tab is highlighted (s2-multiplier)", () => {
     const { getByText } = render(<Controls {...DEFAULT_PROPS} />);
-    const henleBtn = getByText("Henle");
-    expect(henleBtn.style.color).toBe("rgb(230, 126, 34)"); // #e67e22
+    const btn = getByText("Multiplier");
+    expect(btn.style.color).toBe("rgb(230, 126, 34)"); // #e67e22
   });
 
   it("calls onUpdateCfg when scenario tab is clicked", () => {
     const onUpdateCfg = vi.fn();
     const { getByText } = render(<Controls {...DEFAULT_PROPS} onUpdateCfg={onUpdateCfg} />);
-    fireEvent.click(getByText("Open"));
-    expect(onUpdateCfg).toHaveBeenCalledWith("scenario", "open");
+    fireEvent.click(getByText("Exchange"));
+    expect(onUpdateCfg).toHaveBeenCalledWith("scenario", "s1-exchange");
   });
 
   it("calls onStep when Step button is clicked", () => {
@@ -86,12 +87,12 @@ describe("Controls", () => {
 
   it("does not show B Input for loop scenarios", () => {
     const { queryByLabelText } = render(<Controls {...DEFAULT_PROPS} />);
-    // henle is isLoop — B Input should not be rendered
+    // multiplier is isLoop — B Input should not be rendered
     expect(queryByLabelText("B Input")).toBeNull();
   });
 
   it("shows B Input for open scenarios", () => {
-    const cfg = { ...CFG, scenario: "open" };
+    const cfg = { ...CFG, scenario: "s1-exchange" };
     const { getByLabelText } = render(<Controls {...DEFAULT_PROPS} cfg={cfg} />);
     expect(getByLabelText("B Input")).toBeTruthy();
   });

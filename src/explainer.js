@@ -1,78 +1,59 @@
 import { SC } from "./constants.js";
 import { gc } from "./helpers.js";
 
-// Bug 5 fix: injection-vs-real language, specific numbers, mechanism clarity.
 export function explain(phase, s, prev, cfg, step) {
   const sc = SC[cfg.scenario];
   const n = cfg.numBoxes;
 
   if (phase === "idle") {
-    return "Press Step to begin. Each press does ONE operation — watch one mechanism at a time.";
+    return `[Stage ${sc.stage}] Press Step to begin. Learn how ${sc.label} works.`;
   }
 
   if (phase === "feed") {
-    let t = `Fresh fluid enters D1 at ${cfg.initialA} mOsm (kidney input from glomerulus).`;
-    if (!sc.isLoop) t += ` A${n} receives ${cfg.initialB} mOsm (counter-flow input).`;
-    if (sc.isLoop && step === 0) t += " The loop means fluid will U-turn at the tip into the ascending limb.";
+    let t = `Fresh fluid enters D1 at ${cfg.initialA} mOsm (glomerular filtrate).`;
+    if (!sc.isLoop) t += ` A${n} receives ${cfg.initialB} mOsm.`;
     return t;
   }
 
   if (phase === "exchange") {
-    return `Passive D↔A exchange at ${cfg.exchangeRate}% rate. Solute diffuses down its gradient at each position — no energy used, no net concentration.`;
+    return `Passive Exchange: Solute diffuses between tubes until they match. This cannot concentrate fluid, it only redistributes it.`;
   }
 
   if (phase === "inject") {
-    let fab = 0;
-    for (let i = n - 1; i >= Math.floor(n / 2); i--) {
-      fab += Math.min(prev ? gc(prev.as[i], prev.aw[i]) : 0, cfg.activeAmount);
-    }
-    return `⚠ INJECTION (not real physiology): ~${Math.round(fab)} stripped from A, half fabricated into D, half destroyed. Solute is created/destroyed each cycle — conservation is violated. This is why injection ≠ real multiplication.`;
+    return `Injection: Solute is manually moved into the descending limb. This mimics a pump but violates conservation of mass.`;
   }
 
   if (phase === "pump") {
-    let moved = 0;
-    const d = cfg.damping ?? 1;
-    for (let i = n - 1; i >= Math.floor(n / 2); i--) {
-      const ac = gc(prev ? prev.as[i] : 0, prev ? prev.aw[i] : 1);
-      const ic = gc(prev ? prev.is[i] : 0, prev ? prev.iw[i] : 1);
-      const target = Math.max(0, ic - cfg.activeAmount);
-      if (ac > target) {
-        moved += Math.min((ac - target) * (prev ? prev.aw[i] : 1), prev ? prev.as[i] : 0) * d;
-      }
-    }
-    return `Active pump (NKCC2 in TAL): ~${Math.round(moved)} solute moved A→I. Nothing is created or destroyed — the single effect: pump keeps A ≈ ${cfg.activeAmount} mOsm lower than I at each level. Result: A exits the medulla hypoosmotic (dilute) to the cortex.`;
+    const activeAmount = sc.activeAmountOverride !== undefined ? sc.activeAmountOverride : cfg.activeAmount;
+    if (activeAmount === 0) return "Furosemide Active: The NKCC2 pump is BLOCKED. No solute moves from A to I. The gradient will eventually wash out.";
+    return `Active Pump: Salt is moved from A to I. The 'Single Effect' is creating a ~${activeAmount} mOsm difference at this level.`;
   }
 
   if (phase === "osmosis") {
     const tipIc = gc(s.is[n - 1], s.iw[n - 1]);
     const tipDc = gc(s.ds[n - 1], s.dw[n - 1]);
-    let t = `Osmosis: salty Interstitium pulls water out of D (descending limb is water-permeable). D concentrates by losing volume — no solute is added.`;
-    if (tipIc > 10) t += ` Tip: I=${Math.round(tipIc)}, D=${Math.round(tipDc)} mOsm (D water volume: ${s.dw[n - 1].toFixed(2)}).`;
+    let t = `Osmosis: The salty tissue (I) pulls water out of the descending limb (D).`;
+    if (tipIc > 10) t += ` Tip Tissue=${Math.round(tipIc)}, Tip Tubule=${Math.round(tipDc)} mOsm.`;
     return t;
   }
 
   if (phase === "exchange_vr") {
-    return `Vasa Recta: Countercurrent blood flow maintains the gradient. VR vessels supply the medulla with oxygen but are designed to not "wash out" the solute gradient — blood equilibrates with tissue as it descends and re-equilibrates as it ascends.`;
+    return "Vasa Recta: Countercurrent blood flow supplies the medulla with oxygen while preserving the gradient through passive exchange.";
   }
 
   if (phase === "osmosis_cd") {
     const urineConc = gc(s.cds[n - 1], s.cdw[n - 1]);
-    const adhPct = Math.round((cfg.adh ?? 0.6) * 100);
-    const diNote = adhPct < 10 ? " (DI: Polyuria/Hypoosmotic)" : "";
-    return `Collecting Duct: ${adhPct}% ADH opens water channels. Urine equilibrates with the salty tissue gradient. Final: ${Math.round(urineConc)} mOsm${diNote}.`;
+    const adh = sc.adhOverride !== undefined ? sc.adhOverride : (cfg.adh ?? 0.6);
+    const adhPct = Math.round(adh * 100);
+    if (adhPct === 0) return "Diabetes Insipidus: 0% ADH means the CD is impermeable to water. Urine remains dilute despite the gradient.";
+    return `Collecting Duct: ${adhPct}% ADH recovery. Urine equilibrates with the tissue gradient. Final: ${Math.round(urineConc)} mOsm.`;
   }
 
   if (phase === "flow") {
-    let t = "Tubular flow: D advances down↓, A advances up↑.";
-    if (sc.isLoop) t += " U-turn: D tip fluid becomes A tip — fresh low-concentration fluid enters the pump zone.";
-    else t += " No tip connection — concentrated D exits as urine.";
-    if (sc.hasI) t += " Interstitium (I) stays in tissue — it is the gradient battery.";
+    let t = "Flow: Fluid moves down↓ and up↑.";
+    if (sc.isLoop) t += " The U-turn recirculates concentrated fluid back to the pump zone, multiplying the effect.";
     const tipD = gc(s.ds[n - 1], s.dw[n - 1]);
-    const tipA = gc(s.as[n - 1], s.aw[n - 1]);
-    const tipMax = Math.max(tipD, tipA);
-    if (tipMax > cfg.initialA * 1.1 && sc.isLoop) {
-      t += ` Tip=${Math.round(tipMax)} mOsm (D=${Math.round(tipD)}, A=${Math.round(tipA)}) — countercurrent multiplication in action.`;
-    }
+    if (tipD > cfg.initialA * 1.1) t += ` Multiplication Active: Tip is now ${Math.round(tipD)} mOsm!`;
     return t;
   }
 

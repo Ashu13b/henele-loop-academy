@@ -29,17 +29,27 @@ export default function Controls({
   const pi = PI[phase] || PI.idle;
   const phases = Object.values(PI).filter(p => p !== PI.idle);
 
+  const stages = [1, 2, 3, 4];
+
   return (
     <>
-      {/* Scenario tabs */}
-      <div style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "center", marginBottom: 6 }}>
-        {Object.entries(SC).map(([k, v]) => (
-          <button key={k} onClick={() => onUpdateCfg("scenario", k)} style={{
-            padding: "5px 8px", borderRadius: 5, fontSize: 9, fontWeight: 600, cursor: "pointer",
-            border: cfg.scenario === k ? "2px solid #e67e22" : "1px solid #2a2a3a",
-            background: cfg.scenario === k ? "#2a1f0e" : v.hasI ? "#0f1525" : "#14142a",
-            color: cfg.scenario === k ? "#e67e22" : v.hasI ? "#5dade2" : "#777",
-          }}>{v.short}</button>
+      {/* Academy Curriculum Stages */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+        {stages.map(st => (
+          <div key={st} style={{ background: "#0b0b14", border: "1px solid #222", borderRadius: 6, padding: "4px 6px" }}>
+            <div style={{ fontSize: 8, fontWeight: 800, color: "#444", marginBottom: 3, textTransform: "uppercase", letterSpacing: 1 }}>Stage {st}</div>
+            <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+              {Object.entries(SC).filter(([_, v]) => v.stage === st).map(([k, v]) => (
+                <button key={k} onClick={() => onUpdateCfg("scenario", k)} style={{
+                  padding: "4px 6px", borderRadius: 4, fontSize: 9, fontWeight: 600, cursor: "pointer",
+                  border: cfg.scenario === k ? "1px solid #e67e22" : "1px solid #2a2a3a",
+                  background: cfg.scenario === k ? "#2a1f0e" : "#14142a",
+                  color: cfg.scenario === k ? "#e67e22" : "#777",
+                  flex: 1, minWidth: "60px"
+                }}>{v.short}</button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
