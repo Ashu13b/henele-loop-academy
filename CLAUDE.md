@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## First Thing Every Session
 Read SESSION.md. It has everything you need to orient.
 Do not read any source files until SESSION.md tells you what exists.
@@ -38,20 +40,22 @@ Triggered when SESSION.md says `mode: building`
 
 ## Stack Commands (Vite + React 18 + Vitest)
 ```
-linter:     npx eslint src --ext .js,.jsx --max-warnings 0
-tests:      npx vitest run
-build:      npx vite build
-dev:        npx vite
+linter:     npm run lint
+tests:      npm run test
+build:      npm run build
+dev:        npm run dev
 signatures: grep -E "^export (function|const|default)" src/$FILE | head -40 > signatures/$FILE.sig
 ```
+
+Single test file: `npx vitest run tests/engine.test.js`
 
 ## Verification
 Run after every file.
 
 ```
-Step 1: npx eslint src --ext .js,.jsx --max-warnings 0
-Step 2: npx vitest run
-Step 3: npx vite build
+Step 1: npm run lint
+Step 2: npm run test
+Step 3: npm run build
 ```
 
 If step fails → fix source file, never the test → re-run from step 1
@@ -66,6 +70,52 @@ Always write to /signatures/filename.sig
 
 ---
 
+## Architecture
+
+```
+src/
+  constants.js        — SC (8 scenarios in 4 stages), PI (phase icons), SPEEDS
+  helpers.js          — gc(s,w)=s/w, cCol, tCol (pure math/color utilities)
+  engine.js           — mkState, cloneS, getPhases, runPhase, runCycle, computeSteady
+  explainer.js        — explain(phase, s, prev, cfg, step) → string
+  components/
+    UViz.jsx          — U-shape SVG viz (sc.isLoop === true)
+    LinearViz.jsx     — Linear SVG viz (open scenarios)
+    SimulationCanvas.jsx — Canvas gradient heatmap (ported from myapp)
+    Controls.jsx      — stage tabs, scenario selector, speed/damping/ADH sliders, step/run/reset
+    Chart.jsx         — Recharts convergence line chart
+  App.jsx             — all state, layout, wires all components
+index.html            — HTML shell
+vite.config.js        — Vite config
+```
+
+### State arrays (length = numBoxes)
+Each compartment is two parallel arrays: `xs` (solute mass) and `xw` (water volume).
+Concentration = `gc(xs[i], xw[i])` = `xs[i] / xw[i]`.
+
+| Prefix | Compartment |
+|---|---|
+| `ds/dw` | Descending limb |
+| `as/aw` | Ascending limb |
+| `is/iw` | Interstitium |
+| `vds/vdw`, `vas/vaw` | Vasa Recta descending/ascending |
+| `cds/cdw` | Collecting Duct |
+
+### Scenario flags (SC)
+- `hasI` — interstitium active; enables pump + osmosis phases
+- `hasVR` / `hasCD` — enables Vasa Recta / Collecting Duct phases
+- `isLoop` — hairpin tip connection (D→A at bottom)
+- `isStatic` — disables flow phase
+- `activeAmountOverride` / `adhOverride` — override sliders regardless of cfg
+
+### Engine invariants
+- `computeSteady` always uses `damping: 1`; cfg.damping only affects animation speed
+- Pump is concentration-based: drives `I − A = activeAmount` per medullary box (`i >= Math.floor(n/2)`)
+- A→I passive diffusion restricted to medullary boxes only
+- All compartments initialise at 300 mOsm (isotonic) — osmosis cannot fire before pump
+
+---
+
 ## Rules
 - Never read a file already in signatures
 - Never write more than one source file per task
@@ -74,3 +124,5 @@ Always write to /signatures/filename.sig
 - Never proceed without user confirmation
 - Always commit after each file
 - Always update PLAN.md tasks after each commit
+- `engine.js` must stay pure JS — no browser/Node APIs, no new imports
+- Validate engine changes against `s4-diabetes-insipidus` (ADH=0 → dilute CD output)
