@@ -159,24 +159,30 @@ export function runPhase(st, phase, cfg) {
     const nvas = [...s.vas], nvaw = [...s.vaw];
     const ncds = [...s.cds], ncdw = [...s.cdw];
 
+    // fr=1: full shift per cycle (original behaviour). fr<1: partial advance —
+    // fluid blends between its current position and the next, modelling slower
+    // tubular transit where less volume turns over per step.
+    const fr = cfg.flowRate ?? 1;
+    const mix = (a, b) => a * (1 - fr) + b * fr;
+
     if (sc.isLoop) {
-      for (let i = n - 1; i > 0; i--) { nds[i] = s.ds[i - 1]; ndw[i] = s.dw[i - 1]; }
-      nas[n - 1] = s.ds[n - 1]; naw[n - 1] = s.dw[n - 1];
-      for (let i = 0; i < n - 1; i++) { nas[i] = s.as[i + 1]; naw[i] = s.aw[i + 1]; }
-      nds[0] = cfg.initialA; ndw[0] = 1;
+      for (let i = n - 1; i > 0; i--) { nds[i] = mix(s.ds[i], s.ds[i - 1]); ndw[i] = mix(s.dw[i], s.dw[i - 1]); }
+      nds[0] = mix(s.ds[0], cfg.initialA); ndw[0] = mix(s.dw[0], 1);
+      nas[n - 1] = mix(s.as[n - 1], s.ds[n - 1]); naw[n - 1] = mix(s.aw[n - 1], s.dw[n - 1]);
+      for (let i = 0; i < n - 1; i++) { nas[i] = mix(s.as[i], s.as[i + 1]); naw[i] = mix(s.aw[i], s.aw[i + 1]); }
 
-      for (let i = n - 1; i > 0; i--) { nvds[i] = s.vds[i - 1]; nvdw[i] = s.vdw[i - 1]; }
-      nvas[n - 1] = s.vds[n - 1]; nvaw[n - 1] = s.vdw[n - 1];
-      for (let i = 0; i < n - 1; i++) { nvas[i] = s.vas[i + 1]; nvaw[i] = s.vaw[i + 1]; }
-      nvds[0] = 300; nvdw[0] = 1;
+      for (let i = n - 1; i > 0; i--) { nvds[i] = mix(s.vds[i], s.vds[i - 1]); nvdw[i] = mix(s.vdw[i], s.vdw[i - 1]); }
+      nvds[0] = mix(s.vds[0], 300); nvdw[0] = mix(s.vdw[0], 1);
+      nvas[n - 1] = mix(s.vas[n - 1], s.vds[n - 1]); nvaw[n - 1] = mix(s.vaw[n - 1], s.vdw[n - 1]);
+      for (let i = 0; i < n - 1; i++) { nvas[i] = mix(s.vas[i], s.vas[i + 1]); nvaw[i] = mix(s.vaw[i], s.vaw[i + 1]); }
 
-      for (let i = n - 1; i > 0; i--) { ncds[i] = s.cds[i - 1]; ncdw[i] = s.cdw[i - 1]; }
-      ncds[0] = s.as[0]; ncdw[0] = s.aw[0];
+      for (let i = n - 1; i > 0; i--) { ncds[i] = mix(s.cds[i], s.cds[i - 1]); ncdw[i] = mix(s.cdw[i], s.cdw[i - 1]); }
+      ncds[0] = mix(s.cds[0], s.as[0]); ncdw[0] = mix(s.cdw[0], s.aw[0]);
     } else {
-      for (let i = n - 1; i > 0; i--) { nds[i] = s.ds[i - 1]; ndw[i] = s.dw[i - 1]; }
-      for (let i = 0; i < n - 1; i++) { nas[i] = s.as[i + 1]; naw[i] = s.aw[i + 1]; }
-      nds[0] = cfg.initialA; ndw[0] = 1;
-      nas[n - 1] = cfg.initialB; naw[n - 1] = 1;
+      for (let i = n - 1; i > 0; i--) { nds[i] = mix(s.ds[i], s.ds[i - 1]); ndw[i] = mix(s.dw[i], s.dw[i - 1]); }
+      nds[0] = mix(s.ds[0], cfg.initialA); ndw[0] = mix(s.dw[0], 1);
+      for (let i = 0; i < n - 1; i++) { nas[i] = mix(s.as[i], s.as[i + 1]); naw[i] = mix(s.aw[i], s.aw[i + 1]); }
+      nas[n - 1] = mix(s.as[n - 1], cfg.initialB); naw[n - 1] = mix(s.aw[n - 1], 1);
     }
     s.ds = nds; s.dw = ndw; s.as = nas; s.aw = naw;
     s.vds = nvds; s.vdw = nvdw; s.vas = nvas; s.vaw = nvaw;

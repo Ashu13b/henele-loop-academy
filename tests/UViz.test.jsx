@@ -52,8 +52,8 @@ describe("UViz", () => {
     const cfg = { ...CFG, numBoxes: 4 };
     const { container } = render(<UViz s={s} n={4} mx={600} phase="idle" cfg={cfg} />);
     const rects = container.querySelectorAll("rect");
-    // 4 rows × 5 tubule columns (D, A, CD, VR-D, VR-A) = 20
-    // + 1 background gradient rect = 21 total
-    expect(rects.length).toBe(21);
+    // s2-multiplier: hasI=true, hasVR=false, hasCD=false
+    // 4 rows × 2 columns (D + A) = 8, plus 1 interstitium background rect = 9
+    expect(rects.length).toBe(9);
   });
 });

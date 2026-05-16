@@ -88,8 +88,8 @@ export default function App() {
   const fullCycle = useCallback(() => {
     const order = getPhases(cfg.scenario);
     let i = 0;
-    const iv = setInterval(() => { advance(); i++; if (i >= order.length) clearInterval(iv); }, 350);
-  }, [advance, cfg.scenario]);
+    const iv = setInterval(() => { advance(); i++; if (i >= order.length) clearInterval(iv); }, SPEEDS[speedIdx].ms);
+  }, [advance, cfg.scenario, speedIdx]);
 
   useEffect(() => {
     if (playing) timerRef.current = setInterval(advance, SPEEDS[speedIdx].ms);

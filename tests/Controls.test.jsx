@@ -16,6 +16,8 @@ const noop = () => {};
 const DEFAULT_PROPS = {
   cfg: CFG,
   onUpdateCfg: noop,
+  activeStage: 2,
+  setActiveStage: noop,
   phase: "idle",
   playing: false,
   speedIdx: 1,
@@ -52,8 +54,8 @@ describe("Controls", () => {
   it("calls onUpdateCfg when scenario tab is clicked", () => {
     const onUpdateCfg = vi.fn();
     const { getByText } = render(<Controls {...DEFAULT_PROPS} onUpdateCfg={onUpdateCfg} />);
-    fireEvent.click(getByText("Exchange"));
-    expect(onUpdateCfg).toHaveBeenCalledWith("scenario", "s1-exchange");
+    fireEvent.click(getByText("Single-E"));
+    expect(onUpdateCfg).toHaveBeenCalledWith("scenario", "s2-single-effect");
   });
 
   it("calls onStep when Step button is clicked", () => {
@@ -93,7 +95,7 @@ describe("Controls", () => {
 
   it("shows B Input for open scenarios", () => {
     const cfg = { ...CFG, scenario: "s1-exchange" };
-    const { getByLabelText } = render(<Controls {...DEFAULT_PROPS} cfg={cfg} />);
+    const { getByLabelText } = render(<Controls {...DEFAULT_PROPS} cfg={cfg} activeStage={1} />);
     expect(getByLabelText("B Input")).toBeTruthy();
   });
 });

@@ -59,8 +59,8 @@ export default function Controls({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 5, background: "#14142a", padding: 6, borderRadius: 5, border: "1px solid #222240", marginBottom: 6 }}>
         <NI label="Segments" value={cfg.numBoxes} min={1} max={20} onChange={v => onUpdateCfg("numBoxes", v)} />
         <NI label="D Input" value={cfg.initialA} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialA", v)} />
-        {!sc.isLoop && <NI label="A Input" value={cfg.initialB} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialB", v)} />}
-        <NI label="Exchange" value={cfg.exchangeRate} min={0} max={100} step={5} onChange={v => onUpdateCfg("exchangeRate", v)} />
+        {!sc.isLoop && <NI label="B Input" value={cfg.initialB} min={0} max={2000} step={50} onChange={v => onUpdateCfg("initialB", v)} />}
+        <NI label="Exch %" value={cfg.exchangeRate} min={0} max={100} step={5} onChange={v => onUpdateCfg("exchangeRate", v)} />
         {sc.hasActive && <NI label={sc.hasI ? "Pump" : "Inject"} value={cfg.activeAmount} min={0} max={500} step={10} onChange={v => onUpdateCfg("activeAmount", v)} />}
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <label style={{ fontSize: 9, color: "#666", fontWeight: 600 }}>

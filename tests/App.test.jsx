@@ -15,8 +15,9 @@ describe("App", () => {
 
   it("renders scenario stages", () => {
     const { getByText } = render(<App />);
+    // App starts on stage 1; both stage-1 scenario buttons must be visible
     expect(getByText("Exchange")).toBeTruthy();
-    expect(getByText("Multiplier")).toBeTruthy();
+    expect(getByText("Hairpin")).toBeTruthy();
   });
 
   it("Step button advances phase", () => {
