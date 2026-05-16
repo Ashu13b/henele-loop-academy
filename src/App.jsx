@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import SteadyWorker from './steadyWorker.js?worker';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { SC, PI, SPEEDS } from "./constants.js";
 import { gc, cCol, tCol } from "./helpers.js";
-import { mkState, cloneS, getPhases, runPhase, computeSteady } from "./engine.js";
+import { mkState, cloneS, getPhases, runPhase } from "./engine.js";
 import { explain } from "./explainer.js";
 import UViz from "./components/UViz.jsx";
 import LinearViz from "./components/LinearViz.jsx";
 import Controls from "./components/Controls.jsx";
 import Chart from "./components/Chart.jsx";
-import SimulationCanvas from "./components/SimulationCanvas.jsx";
 
 const MAX_C = 100000;
 
@@ -36,6 +36,7 @@ export default function App() {
   const [steadyResult, setSteadyResult] = useState(null);
   const [computing, setComputing] = useState(false);
   const timerRef = useRef(null);
+  const workerRef = useRef(null);
 
   const sc = SC[cfg.scenario];
   // Always derive n from the live state arrays, not cfg.numBoxes.
@@ -96,14 +97,20 @@ export default function App() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [playing, advance, speedIdx]);
 
-  const calcSteady = useCallback(() => {
-    setComputing(true);
-    setTimeout(() => {
-      const r = computeSteady(cfg);
-      setSteadyResult(r);
+  useEffect(() => {
+    const w = new SteadyWorker();
+    w.onmessage = (e) => {
+      setSteadyResult(e.data);
       setShowSteady(true);
       setComputing(false);
-    }, 30);
+    };
+    workerRef.current = w;
+    return () => w.terminate();
+  }, []);
+
+  const calcSteady = useCallback(() => {
+    setComputing(true);
+    workerRef.current.postMessage(cfg);
   }, [cfg]);
 
   const upd = useCallback((k, v) => setCfg(p => {
@@ -130,12 +137,12 @@ export default function App() {
         if (e.key === "ArrowRight") advance();
         
         if (e.key === "ArrowLeft") {
-          const stageScenarios = Object.entries(SC).filter(([_, v]) => v.stage === activeStage);
+          const stageScenarios = Object.entries(SC).filter(([, v]) => v.stage === activeStage);
           const currentIdx = stageScenarios.findIndex(([k]) => k === cfg.scenario);
           if (currentIdx > 0) upd("scenario", stageScenarios[currentIdx - 1][0]);
           else if (currentIdx === 0 && activeStage > 1) {
              const prevStage = activeStage - 1;
-             const prevScenarios = Object.entries(SC).filter(([_, v]) => v.stage === prevStage);
+             const prevScenarios = Object.entries(SC).filter(([, v]) => v.stage === prevStage);
              setActiveStage(prevStage);
              upd("scenario", prevScenarios[prevScenarios.length - 1][0]);
           }
@@ -150,8 +157,6 @@ export default function App() {
   const aConcs = s.as.map((_, i) => gc(s.as[i], s.aw[i]));
   const cdConcs = s.cds.map((_, i) => gc(s.cds[i], s.cdw[i]));
   const iConcs = sc.hasI ? s.is.map((_, i) => gc(s.is[i], s.iw[i])) : [];
-  const vdConcs = sc.hasI ? s.vds.map((_, i) => gc(s.vds[i], s.vdw[i])) : [];
-  const vaConcs = sc.hasI ? s.vas.map((_, i) => gc(s.vas[i], s.vaw[i])) : [];
 
   const sC = useMemo(() => steadyResult ? {
     d: steadyResult.state.ds.map((_, i) => gc(steadyResult.state.ds[i], steadyResult.state.dw[i])),
@@ -163,7 +168,7 @@ export default function App() {
   const allC = [...dConcs, ...aConcs, ...cdConcs, ...iConcs, ...(sC?.d || []), ...(sC?.a || []), ...(sC?.cd || []), ...(sC?.i || [])];
   const mx = Math.max(1, ...allC);
   const pi = PI[phase] || PI.idle;
-  const expl = explain(phase, s, prev, cfg, fullStep);
+  const expl = explain(phase, s, prev, cfg);
   const totalS = s.ds.reduce((a, v) => a + v, 0) + s.as.reduce((a, v) => a + v, 0) + s.is.reduce((a, v) => a + v, 0);
 
   return (

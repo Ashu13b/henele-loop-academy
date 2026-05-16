@@ -1,7 +1,7 @@
 import { SC } from "./constants.js";
 import { gc } from "./helpers.js";
 
-export function explain(phase, s, prev, cfg, step) {
+export function explain(phase, s, prev, cfg) {
   const sc = SC[cfg.scenario];
   const n = cfg.numBoxes;
 

@@ -8,3 +8,12 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
+
+// Stub Worker for jsdom — Vite's ?worker import generates a class that calls
+// new Worker(...) in its constructor; jsdom has no Worker, so it would throw.
+global.Worker = class {
+  constructor() {}
+  postMessage() {}
+  terminate() {}
+  set onmessage(_) {}
+};

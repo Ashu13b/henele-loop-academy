@@ -39,7 +39,7 @@ export default function Controls({
 
       {/* Sub-scenarios for Active Stage */}
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
-        {Object.entries(SC).filter(([_, v]) => v.stage === activeStage).map(([k, v]) => (
+        {Object.entries(SC).filter(([, v]) => v.stage === activeStage).map(([k, v]) => (
           <button key={k} onClick={() => onUpdateCfg("scenario", k)} style={{
             padding: "6px 8px", borderRadius: 5, fontSize: 10, fontWeight: 700, cursor: "pointer",
             border: cfg.scenario === k ? "1px solid #e67e22" : "1px solid #2a2a3a",
