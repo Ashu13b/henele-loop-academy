@@ -144,10 +144,12 @@ export function runPhase(st, phase, cfg) {
     for (let i = 0; i < n; i++) {
       const ic = gc(s.is[i], s.iw[i]);
       const cdc = gc(s.cds[i], s.cdw[i]);
-      
+      // AQP2 expression peaks in the inner medullary CD (deep boxes).
+      // Depth 0 = cortical (box 0), depth 1 = papillary tip (box n-1).
+      const depth = n > 1 ? i / (n - 1) : 1;
       if (ic > cdc && ic > 0.1) {
         const targetDw = Math.max(s.cds[i] / ic, 0.01);
-        s.cdw[i] = s.cdw[i] + (targetDw - s.cdw[i]) * adh * d;
+        s.cdw[i] = s.cdw[i] + (targetDw - s.cdw[i]) * adh * depth * d;
       }
     }
   }

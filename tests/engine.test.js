@@ -123,23 +123,44 @@ describe("runPhase - osmosis (Bug 10b: full equilibration)", () => {
 });
 
 describe("runPhase - osmosis_cd", () => {
-  it("CD loses water proportional to ADH", () => {
+  it("papillary tip (deep box) loses water at full ADH", () => {
+    const s = mkState(3);
+    // Test the innermost medullary box (i=n-1): depth = 1 → full AQP2 effect
+    s.cds[2] = 300; s.cdw[2] = 1;
+    s.is[2] = 600; s.iw[2] = 1;
+    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 1.0, damping: 1 };
+    const r = runPhase(s, "osmosis_cd", cfg);
+    // depth=1, adh=1, d=1 → full equilibration: cdw = 300/600 = 0.5
+    expect(r.cdw[2]).toBeCloseTo(0.5, 2);
+  });
+
+  it("cortical box (i=0) has no AQP2 effect — depth=0", () => {
     const s = mkState(3);
     s.cds[0] = 300; s.cdw[0] = 1;
     s.is[0] = 600; s.iw[0] = 1;
-    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 1.0, damping: 1 }; // Full ADH, no damping
+    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 1.0, damping: 1 };
     const r = runPhase(s, "osmosis_cd", cfg);
-    // Target dw = 300/600 = 0.5. With adh=1.0 and damping=1, should reach 0.5.
-    expect(r.cdw[0]).toBeCloseTo(0.5, 2);
+    // depth = 0/(3-1) = 0 → no water reabsorption regardless of ADH
+    expect(r.cdw[0]).toBe(1);
+  });
+
+  it("deep box reabsorbs more water than shallow box (gradient)", () => {
+    const s = mkState(3);
+    s.cds[1] = 300; s.cdw[1] = 1; s.is[1] = 600; s.iw[1] = 1;
+    s.cds[2] = 300; s.cdw[2] = 1; s.is[2] = 600; s.iw[2] = 1;
+    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 1.0, damping: 1 };
+    const r = runPhase(s, "osmosis_cd", cfg);
+    // Box 2 (depth=1) should reabsorb more than box 1 (depth=0.5)
+    expect(r.cdw[2]).toBeLessThan(r.cdw[1]);
   });
 
   it("CD reabsorbs no water when ADH is 0", () => {
     const s = mkState(3);
-    s.cds[0] = 300; s.cdw[0] = 1;
-    s.is[0] = 600; s.iw[0] = 1;
-    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 0 }; 
+    s.cds[2] = 300; s.cdw[2] = 1;
+    s.is[2] = 600; s.iw[2] = 1;
+    const cfg = { ...BASE_CFG, numBoxes: 3, adh: 0 };
     const r = runPhase(s, "osmosis_cd", cfg);
-    expect(r.cdw[0]).toBe(1);
+    expect(r.cdw[2]).toBe(1);
   });
 });
 
