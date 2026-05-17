@@ -19,6 +19,14 @@ describe("mkState", () => {
     expect(s.vds).toHaveLength(5);
     expect(s.vas).toHaveLength(5);
     expect(s.cds).toHaveLength(5);
+    expect(s.ius).toHaveLength(5);
+    expect(s.cdus).toHaveLength(5);
+  });
+
+  it("ius and cdus start at 0 (no urea at rest)", () => {
+    const s = mkState(4);
+    expect(s.ius.every(v => v === 0)).toBe(true);
+    expect(s.cdus.every(v => v === 0)).toBe(true);
   });
 
   it("Bug 2 fix: interstitium starts at 300 baseline, not 0", () => {
@@ -180,6 +188,46 @@ describe("runCycle", () => {
     // After many cycles, tip D should exceed input in henle
     const tipD = s.ds[4] / s.dw[4];
     expect(tipD).toBeGreaterThan(300);
+  });
+});
+
+describe("runPhase - urea_recycle", () => {
+  const UREA_CFG = { ...BASE_CFG, scenario: "s4-urea-trap", numBoxes: 4, adh: 1.0, damping: 1 };
+
+  it("urea transfers from CD into IMI in inner medullary boxes at full ADH", () => {
+    const s = mkState(4);
+    s.cdus[3] = 150; s.cdw[3] = 1;  // 150 mOsm urea in deepest CD box
+    s.ius[3] = 0;    s.iw[3] = 1;   // empty IMI urea
+    const r = runPhase(s, "urea_recycle", UREA_CFG);
+    expect(r.ius[3]).toBeGreaterThan(0);
+    expect(r.cdus[3]).toBeLessThan(150);
+  });
+
+  it("no urea transfer in cortical box (i < halfN)", () => {
+    const s = mkState(4);
+    s.cdus[0] = 150; s.cdw[0] = 1;
+    s.ius[0] = 0;    s.iw[0] = 1;
+    const r = runPhase(s, "urea_recycle", UREA_CFG);
+    expect(r.ius[0]).toBe(0);
+    expect(r.cdus[0]).toBe(150);
+  });
+
+  it("no urea transfer when ADH is 0 (UT-A1/3 closed)", () => {
+    const s = mkState(4);
+    s.cdus[3] = 150; s.cdw[3] = 1;
+    s.ius[3] = 0;    s.iw[3] = 1;
+    const r = runPhase(s, "urea_recycle", { ...UREA_CFG, adh: 0 });
+    expect(r.ius[3]).toBe(0);
+    expect(r.cdus[3]).toBe(150);
+  });
+
+  it("no transfer when CD urea equals IMI urea (equilibrium)", () => {
+    const s = mkState(4);
+    s.cdus[3] = 100; s.cdw[3] = 1;
+    s.ius[3] = 100;  s.iw[3] = 1;
+    const r = runPhase(s, "urea_recycle", UREA_CFG);
+    expect(r.ius[3]).toBeCloseTo(100, 3);
+    expect(r.cdus[3]).toBeCloseTo(100, 3);
   });
 });
 

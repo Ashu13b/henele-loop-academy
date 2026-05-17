@@ -6,6 +6,7 @@ export default function UViz({ s, n, mx, phase, cfg }) {
   const hasI = sc.hasI;
   const hasVR = sc.hasVR;
   const hasCD = sc.hasCD;
+  const hasUrea = sc.hasUrea;
   const showExit = sc.isLoop;
   
   // High-fidelity spacing for Pro View
@@ -28,7 +29,7 @@ export default function UViz({ s, n, mx, phase, cfg }) {
   if (hasVR) svgW = vax + bW + 30;
 
   const exitConc = showExit ? gc(s.as[0], s.aw[0]) : 0;
-  const iConcs = hasI ? Array.from({ length: n }).map((_, i) => gc(s.is[i], s.iw[i])) : [];
+  const iConcs = hasI ? Array.from({ length: n }).map((_, i) => gc(s.is[i], s.iw[i]) + (hasUrea ? gc(s.ius[i], s.iw[i]) : 0)) : [];
   const isFl = phase === "flow";
 
   return (
@@ -132,6 +133,21 @@ export default function UViz({ s, n, mx, phase, cfg }) {
             {hasI && isO && <text x={lx + bW + 8} y={y + bH/2 + 2} fill="#3498db" fontSize="10" fontWeight="bold">→💧</text>}
             {hasI && isP && <text x={rx - 12} y={y + bH/2 + 2} textAnchor="end" fill="#8e44ad" fontSize="10" fontWeight="bold">←🧂</text>}
             {hasCD && isOCD && <text x={cdx - 12} y={y + bH/2 + 2} fill="#a855f7" fontSize="10" fontWeight="bold">←💧</text>}
+            {hasCD && hasUrea && phase === "urea_recycle" && i >= Math.floor(n / 2) && (
+              <text x={cdx - 14} y={y + bH/2 + 2} fill="#f39c12" fontSize="9" fontWeight="bold">←U</text>
+            )}
+
+            {/* Urea / NaCl breakdown in tissue area */}
+            {hasI && hasUrea && (
+              <>
+                <text x={ix + bW / 2} y={y + bH / 2 - 3} textAnchor="middle" fill="#aaaacc" fontSize="5" fontWeight="600">
+                  {`Na: ${Math.round(gc(s.is[i], s.iw[i]))}`}
+                </text>
+                <text x={ix + bW / 2} y={y + bH / 2 + 5} textAnchor="middle" fill="#f39c12" fontSize="5" fontWeight="600">
+                  {`U: ${Math.round(gc(s.ius[i], s.iw[i]))}`}
+                </text>
+              </>
+            )}
 
             {/* Thick Flow Arrows in the Gaps */}
             {i < n - 1 && (

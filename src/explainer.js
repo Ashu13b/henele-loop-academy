@@ -49,6 +49,13 @@ export function explain(phase, s, prev, cfg) {
     return `Collecting Duct: ${adhPct}% ADH recovery. Urine equilibrates with the tissue gradient. Final: ${Math.round(urineConc)} mOsm.`;
   }
 
+  if (phase === "urea_recycle") {
+    const tipIUrea = gc(s.ius[n - 1], s.iw[n - 1]);
+    const adh = sc.adhOverride !== undefined ? sc.adhOverride : (cfg.adh ?? 0.6);
+    const adhPct = Math.round(adh * 100);
+    return `Urea Trap (UT-A1/3): ${adhPct}% ADH opens urea transporters in the inner medullary CD. Urea exits into the interstitium, raising total osmolarity. Papillary urea: ${Math.round(tipIUrea)} mOsm. This contributes directly to water reabsorption in the next osmosis_cd step.`;
+  }
+
   if (phase === "flow") {
     let t = "Flow: Fluid moves down↓ and up↑.";
     if (sc.isLoop) t += " The U-turn recirculates concentrated fluid back to the pump zone, multiplying the effect.";

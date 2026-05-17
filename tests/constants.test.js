@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { SC, PI, SPEEDS } from "../src/constants.js";
 
 describe("SC", () => {
-  it("has 9 academy scenarios", () => {
-    expect(Object.keys(SC)).toHaveLength(9);
+  it("has 10 academy scenarios", () => {
+    expect(Object.keys(SC)).toHaveLength(10);
   });
 
   it("each scenario has required shape and stage", () => {

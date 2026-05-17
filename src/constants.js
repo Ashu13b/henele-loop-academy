@@ -80,6 +80,15 @@ export const SC = {
     watch: "Check the CD. Even with a perfect 1200 mOsm tissue gradient, water cannot leave. Urine remains dilute and voluminous.",
     key: "DI: A failure of the 'Receiver' (CD), not the 'Battery' (Gradient). The kidney can't use the salt it worked so hard to store.",
   },
+  "s4-urea-trap": {
+    stage: 4, label: "Urea Trap", short: "Urea",
+    desc: "ADH opens UT-A1/3 transporters in the inner medullary CD, releasing urea into the interstitium. Watch the NaCl + Urea columns — urea adds ~200–400 mOsm to the papillary gradient.",
+    hasActive: true, isLoop: true, hasI: true,
+    defaultNumBoxes: 8, defaultActiveAmount: 200,
+    hasCD: true, hasUrea: true,
+    watch: "Watch the Urea row (amber) build from zero in the inner medullary tissue boxes. Compare the papillary tip total with a scenario that has no CD.",
+    key: "Urea recycling contributes ~40% of inner medullary osmolarity at peak ADH. Without it, maximum urine concentration cannot exceed ~600 mOsm.",
+  },
 };
 
 export const PI = {
@@ -90,7 +99,8 @@ export const PI = {
   osmosis:  { icon: "②", color: "#2980b9", label: "OSMOSIS" },
   vr:       { icon: "④", color: "#e74c3c", label: "VASA RECTA" },
   cd:       { icon: "⑤", color: "#a855f7", label: "COLLECTING DUCT" },
-  flow:     { icon: "⑥", color: "#3498db", label: "FLOW" },
+  flow:         { icon: "⑥", color: "#3498db", label: "FLOW" },
+  urea_recycle: { icon: "⑦", color: "#f39c12", label: "UREA TRAP" },
 };
 
 export const SPEEDS = [

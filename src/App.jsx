@@ -156,7 +156,7 @@ export default function App() {
   const dConcs = s.ds.map((_, i) => gc(s.ds[i], s.dw[i]));
   const aConcs = s.as.map((_, i) => gc(s.as[i], s.aw[i]));
   const cdConcs = s.cds.map((_, i) => gc(s.cds[i], s.cdw[i]));
-  const iConcs = sc.hasI ? s.is.map((_, i) => gc(s.is[i], s.iw[i])) : [];
+  const iConcs = sc.hasI ? s.is.map((_, i) => gc(s.is[i], s.iw[i]) + (sc.hasUrea ? gc(s.ius[i], s.iw[i]) : 0)) : [];
 
   const sC = useMemo(() => steadyResult ? {
     d: steadyResult.state.ds.map((_, i) => gc(steadyResult.state.ds[i], steadyResult.state.dw[i])),

@@ -14,6 +14,8 @@ export function mkState(n) {
     vds: Array(n).fill(300), vdw: Array(n).fill(1),
     vas: Array(n).fill(300), vaw: Array(n).fill(1),
     cds: Array(n).fill(300), cdw: Array(n).fill(1),
+    ius: Array(n).fill(0),   // interstitium urea mass (shares iw as volume)
+    cdus: Array(n).fill(0),  // collecting duct urea mass (shares cdw as volume)
     fabricated: 0, destroyed: 0,
   };
 }
@@ -26,6 +28,7 @@ export function cloneS(s) {
     vds: [...s.vds], vdw: [...s.vdw],
     vas: [...s.vas], vaw: [...s.vaw],
     cds: [...s.cds], cdw: [...s.cdw],
+    ius: [...s.ius], cdus: [...s.cdus],
     fabricated: s.fabricated, destroyed: s.destroyed,
   };
 }
@@ -40,6 +43,7 @@ export function getPhases(scKey) {
     p.push("osmosis");
     if (s.hasVR) p.push("exchange_vr");
     if (s.hasCD) p.push("osmosis_cd");
+    if (s.hasUrea) p.push("urea_recycle");
     if (!s.isStatic) p.push("flow");
     return p;
   }
@@ -142,7 +146,8 @@ export function runPhase(st, phase, cfg) {
   else if (phase === "osmosis_cd") {
     const d = cfg.damping ?? 1;
     for (let i = 0; i < n; i++) {
-      const ic = gc(s.is[i], s.iw[i]);
+      // Total interstitial osmolarity drives CD water reabsorption (NaCl + urea when present).
+      const ic = gc(s.is[i], s.iw[i]) + (sc.hasUrea ? gc(s.ius[i], s.iw[i]) : 0);
       const cdc = gc(s.cds[i], s.cdw[i]);
       // AQP2 expression peaks in the inner medullary CD (deep boxes).
       // Depth 0 = cortical (box 0), depth 1 = papillary tip (box n-1).
@@ -154,12 +159,28 @@ export function runPhase(st, phase, cfg) {
     }
   }
 
+  else if (phase === "urea_recycle") {
+    // UT-A1/3 transporters in inner medullary CD are ADH-gated.
+    // Urea flows from CD lumen into the interstitium down its concentration gradient.
+    const halfN = Math.floor(n / 2);
+    for (let i = halfN; i < n; i++) {
+      const cduc = gc(s.cdus[i], s.cdw[i]);
+      const iuc = gc(s.ius[i], s.iw[i]);
+      if (cduc > iuc && cduc > 0.1) {
+        const mass = Math.min((cduc - iuc) * s.cdw[i] * 0.5 * adh, s.cdus[i]);
+        s.cdus[i] -= mass;
+        s.ius[i] += mass;
+      }
+    }
+  }
+
   else if (phase === "flow") {
     const nds = [...s.ds], ndw = [...s.dw];
     const nas = [...s.as], naw = [...s.aw];
     const nvds = [...s.vds], nvdw = [...s.vdw];
     const nvas = [...s.vas], nvaw = [...s.vaw];
     const ncds = [...s.cds], ncdw = [...s.cdw];
+    const ncdus = [...s.cdus];
 
     // fr=1: full shift per cycle (original behaviour). fr<1: partial advance —
     // fluid blends between its current position and the next, modelling slower
@@ -180,6 +201,11 @@ export function runPhase(st, phase, cfg) {
 
       for (let i = n - 1; i > 0; i--) { ncds[i] = mix(s.cds[i], s.cds[i - 1]); ncdw[i] = mix(s.cdw[i], s.cdw[i - 1]); }
       ncds[0] = mix(s.cds[0], s.as[0]); ncdw[0] = mix(s.cdw[0], s.aw[0]);
+      if (sc.hasUrea) {
+        // Urea enters cortical CD at 150 mOsm (represents dietary urea delivered via distal tubule).
+        for (let i = n - 1; i > 0; i--) { ncdus[i] = mix(s.cdus[i], s.cdus[i - 1]); }
+        ncdus[0] = mix(s.cdus[0], 150 * s.aw[0]);
+      }
     } else {
       for (let i = n - 1; i > 0; i--) { nds[i] = mix(s.ds[i], s.ds[i - 1]); ndw[i] = mix(s.dw[i], s.dw[i - 1]); }
       nds[0] = mix(s.ds[0], cfg.initialA); ndw[0] = mix(s.dw[0], 1);
@@ -189,6 +215,7 @@ export function runPhase(st, phase, cfg) {
     s.ds = nds; s.dw = ndw; s.as = nas; s.aw = naw;
     s.vds = nvds; s.vdw = nvdw; s.vas = nvas; s.vaw = nvaw;
     s.cds = ncds; s.cdw = ncdw;
+    s.cdus = ncdus;
   }
 
   return s;
@@ -207,6 +234,7 @@ const MIN_C = 10000, MAX_C = 100000;
 export function computeSteady(cfg) {
   const n = cfg.numBoxes;
   const hasI = SC[cfg.scenario].hasI;
+  const hasUrea = SC[cfg.scenario].hasUrea;
   let s = mkState(n);
   let conv = -1;
   const snaps = [];
@@ -238,6 +266,9 @@ export function computeSteady(cfg) {
           Math.abs(gc(s.vds[i], s.vdw[i]) - gc(p.vds[i], p.vdw[i])),
           Math.abs(gc(s.vas[i], s.vaw[i]) - gc(p.vas[i], p.vaw[i])),
         );
+      }
+      if (hasUrea) {
+        md = Math.max(md, Math.abs(gc(s.ius[i], s.iw[i]) - gc(p.ius[i], p.iw[i])));
       }
     }
     if (md < 0.001 && c >= MIN_C) { conv = c + 1; break; }
